@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Grupito 3 · Atención a estudiantes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+<div class="appbar"><div class="in">
+  <svg class="logo" viewBox="0 0 48 48" role="img" aria-label="Logo de Grupito 3">
+    <rect width="48" height="48" rx="12" fill="var(--brand)"/>
+    <circle cx="24" cy="14" r="5.5" fill="var(--on-brand)"/><path d="M14.5 30a9.5 9.5 0 0 1 19 0z" fill="var(--on-brand)"/>
+    <circle cx="11" cy="21" r="4" fill="var(--on-brand)" opacity=".75"/><path d="M3.5 35a7.5 7.5 0 0 1 11-6.6V35z" fill="var(--on-brand)" opacity=".75"/>
+    <circle cx="37" cy="21" r="4" fill="var(--on-brand)" opacity=".75"/><path d="M44.5 35a7.5 7.5 0 0 0-11-6.6V35z" fill="var(--on-brand)" opacity=".75"/>
+    <text x="24" y="43.5" text-anchor="middle" font-family="Space Grotesk,sans-serif" font-weight="700" font-size="9" fill="var(--on-brand)">3</text>
+  </svg>
+  <div><div class="brandname">Grupito 3</div><div class="brandsub">Mesa de ayuda · Atención a estudiantes</div></div>
+</div></div>
+
+<div class="wrap">
+  <header>
+    <h1>¿En qué podemos ayudarte?</h1>
+    <p class="sub">Consulta el estado de tu solicitud, pregunta por un problema frecuente o revisa cómo contactarnos.</p>
+  </header>
+
+  <section aria-labelledby="h-est">
+    <h2 id="h-est">Consultar el estado de mi ticket</h2>
+    <form class="field" id="formEstado">
+      <input type="text" id="ticketId" placeholder="Escribe tu TicketID, por ejemplo T-005" aria-label="TicketID" autocomplete="off">
+      <button type="submit">Consultar</button>
+    </form>
+    <div id="estadoTicket" class="estres" aria-live="polite"></div>
+  </section>
+
+  <section aria-labelledby="h-ia">
+    <h2 id="h-ia">Pregúntale a la mesa de ayuda</h2>
+    <p class="sub" style="margin:0">Elige un problema frecuente o escribe tu pregunta.</p>
+    <div class="chips" id="chipsPreg"></div>
+    <form class="field" id="formPreg">
+      <input type="text" id="preg" placeholder="Escribe tu pregunta" aria-label="Tu pregunta" maxlength="500" autocomplete="off">
+      <button type="submit" id="btnPreg">Enviar</button>
+    </form>
+    <div class="chat" id="chat" aria-live="polite"></div>
+    <p class="note">Las respuestas son orientativas. Si el problema continúa, registra tu caso por uno de los canales.</p>
+  </section>
+
+  <section aria-labelledby="h-can">
+    <h2 id="h-can">Canales de atención</h2>
+    <div class="canales" id="canales"></div>
+  </section>
+
+  <footer>Grupito 3 · Mesa de ayuda</footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+
+// Datos que el coordinador cargó en este mismo navegador (si existen)
+let datos = {tickets: [], id: false, desc: false, pend: []};
+try { const d = JSON.parse(localStorage.getItem('g3_tickets') || 'null'); if (d && Array.isArray(d.tickets)) datos = d; } catch {}
+const tickets = datos.tickets, pend = new Set(datos.pend || []);
+
+const DEF_PROB = [
+  {texto:'La plataforma del curso queda cargando.', categoria:'Aula virtual'},
+  {texto:'No puedo enviar correos desde mi cuenta institucional.', categoria:'Correo institucional'},
+  {texto:'El sistema no muestra mi pago de matrícula.', categoria:'Matrícula'},
+  {texto:'El enlace del libro digital indica acceso denegado.', categoria:'Biblioteca digital'}
+];
+function problemas(){
+  if (!tickets.length || !datos.desc) return DEF_PROB;
+  const m = new Map();
+  tickets.forEach(t => { if (!t.descripcion) return; const k = norm(t.descripcion); const g = m.get(k) || {texto:t.descripcion, categoria:t.categoria, cantidad:0}; g.cantidad++; m.set(k,g); });
+  return [...m.values()].sort((a,b)=>b.cantidad-a.cantidad).slice(0,5);
+}
+function canales(){ const c = [...new Set(tickets.map(t=>t.canal).filter(Boolean))]; return c.length ? c : ['Formulario','Correo','Teléfono']; }
+
+$('chipsPreg').innerHTML = problemas().map((p,i)=>`<button type="button" class="qchip" data-i="${i}">${esc(p.texto.replace(/\.$/,''))}</button>`).join('');
+document.querySelectorAll('.qchip').forEach(b => b.addEventListener('click', () => { $('preg').value = 'Tengo este problema: ' + problemas()[b.dataset.i].texto; $('formPreg').requestSubmit(); }));
+$('canales').innerHTML = canales().map(c=>`<span class="canal">${esc(c)}</span>`).join('');
+
+$('formEstado').addEventListener('submit', e => {
+  e.preventDefault();
+  const q = norm($('ticketId').value), out = $('estadoTicket');
+  if (!q) { out.innerHTML = '<div class="msg">Escribe tu TicketID.</div>'; return; }
+  if (!tickets.length || !datos.id) { out.innerHTML = '<div class="msg">En este momento no podemos consultar el estado de tu ticket. Contáctanos por uno de los canales de atención.</div>'; return; }
+  const t = tickets.find(x => norm(x.id) === q);
+  if (!t) { out.innerHTML = '<div class="msg err">No encontramos ese TicketID. Revisa que esté bien escrito.</div>'; return; }
+  const p = pend.has(t.estado);
+  out.innerHTML = `<div class="msg"><b>${esc(t.id)}</b> · ${esc(t.categoria || 'Sin categoría')} · <span class="${p?'pill':''}">${esc(t.estado || 'Sin estado')}</span><br>${p ? 'Tu solicitud sigue en atención.' : (t.estado ? 'Tu solicitud ya fue atendida.' : 'Aún no hay un estado registrado para tu solicitud.')}</div>`;
+});
+
+function burbuja(clase, texto){ const d = document.createElement('div'); d.className = 'bub ' + clase; d.textContent = texto; $('chat').appendChild(d); d.scrollIntoView({block:'nearest'}); return d; }
+$('formPreg').addEventListener('submit', async e => {
+  e.preventDefault();
+  const q = $('preg').value.trim(); if (!q) return;
+  burbuja('yo', q); $('preg').value = '';
+  const espera = burbuja('bot', 'Escribiendo…'); $('btnPreg').disabled = true;
+  try {
+    const r = await fetch('/api/ayuda', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({pregunta:q, problemas:problemas(), canales:canales()})});
+    const j = await r.json();
+    espera.textContent = r.ok ? j.respuesta : (j.error || 'No pude responder en este momento.');
+  } catch { espera.textContent = 'No pude responder en este momento. Intenta de nuevo o contacta a la mesa de ayuda.'; }
+  $('btnPreg').disabled = false;
+});
+</script>
+</body>
+</html>

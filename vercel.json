@@ -9,5 +9,6 @@
       "maxDuration": 60,
       "includeFiles": ".claude/skills/informe-mesa-de-ayuda/SKILL.md"
     }
-  }
+  },
+  "cleanUrls": true
 }

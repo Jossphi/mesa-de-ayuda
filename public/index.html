@@ -6,102 +6,7 @@
 <title>Grupito 3 · Portal Mesa de Ayuda</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-/* Layout: barra superior con logo, zona de carga grande, guía de 3 pasos y resultados por bloques */
-:root{
-  --bg:#f3f6f6; --surface:#ffffff; --ink:#10262b; --muted:#587176; --line:#d8e3e4;
-  --brand:#0f6b6b; --brand-2:#0a4d52; --brand-soft:#e1f1f0; --on-brand:#ffffff;
-  --warn:#b4540a; --warn-soft:#fdf0e1; --ok:#2a7a4f; --ok-soft:#e4f3ea; --bar:#5fa8a6; --err:#a11d2e;
-  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:"Inter",system-ui,sans-serif;
-}
-@media (prefers-color-scheme:dark){:root{
-  --bg:#0c1a1d; --surface:#132a2e; --ink:#e6f1f1; --muted:#98b4b7; --line:#25444a;
-  --brand:#4fc1bd; --brand-2:#2c8f8c; --brand-soft:#173d40; --on-brand:#06201f;
-  --warn:#f0a35e; --warn-soft:#3a2a1a; --ok:#6cc79c; --ok-soft:#173a2a; --bar:#3f8f8d; --err:#ff8a98; color-scheme:dark}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
-.appbar{background:var(--surface);border-bottom:1px solid var(--line)}
-.appbar .in{max-width:1000px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:12px}
-.logo{width:44px;height:44px;flex:none}
-.brandname{font-family:var(--f-display);font-weight:700;font-size:1.35rem;line-height:1.1}
-.brandsub{color:var(--muted);font-size:13px}
-.wrap{max-width:1000px;margin:0 auto;padding:24px 16px 56px;display:flex;flex-direction:column;gap:20px}
-h1{font-family:var(--f-display);font-size:clamp(1.5rem,4vw,2rem);line-height:1.15;margin:0 0 4px;text-wrap:balance}
-h2{font-family:var(--f-display);font-size:1.15rem;margin:0 0 12px}
-h3{font-family:var(--f-display);font-size:1rem;margin:0 0 10px}
-.sub,.note{color:var(--muted)}
-.note{font-size:13px;margin:10px 0 0}
-section,.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;min-width:0}
-.drop{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:28px 16px;border:2px dashed var(--brand);border-radius:12px;background:var(--brand-soft);cursor:pointer;transition:background .15s}
-.drop.over{background:var(--surface);border-style:solid}
-.drop svg{width:40px;height:40px;color:var(--brand)}
-.drop b{font-size:1.05rem}
-.drop input{position:absolute;opacity:0;width:1px;height:1px}
-.drop:focus-within{outline:3px solid var(--brand);outline-offset:2px}
-.acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;align-items:center}
-button,.btn{font:inherit;font-weight:600;padding:10px 18px;border-radius:8px;border:1px solid var(--brand);background:var(--brand);color:var(--on-brand);cursor:pointer;text-decoration:none;display:inline-block}
-button.sec,.btn.sec{background:transparent;color:var(--brand)}
-button:hover,.btn:hover{filter:brightness(1.08)}
-button:focus-visible,select:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-.guide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-.guide .card{display:flex;gap:12px;align-items:flex-start}
-.guide .num{flex:none;width:30px;height:30px;border-radius:50%;background:var(--brand);color:var(--on-brand);display:grid;place-items:center;font-weight:700}
-.guide b{display:block}
-.msg{padding:12px 16px;border-radius:10px;border:1px solid var(--line);background:var(--brand-soft)}
-.msg.err{border-color:var(--err);color:var(--err);background:var(--surface)}
-.hallazgo{border:2px solid var(--warn);background:var(--warn-soft)}
-.hallazgo .tag{display:inline-block;background:var(--warn);color:var(--surface);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 10px;border-radius:99px;margin-bottom:10px}
-.hallazgo h2{color:var(--warn)}
-.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.step{background:var(--surface);border-radius:10px;padding:14px;min-width:0}
-.step b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--warn);margin-bottom:4px}
-.ids{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.id{font-variant-numeric:tabular-nums;font-weight:600;background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn);border-radius:6px;padding:1px 8px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
-.kpi{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--bg)}
-.kpi .n{font-family:var(--f-display);font-size:2.1rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
-.kpi .l{color:var(--muted);font-size:13px}
-.kpi.pend{background:var(--warn-soft);border-color:var(--warn)}.kpi.pend .n{color:var(--warn)}
-.kpi.ok{background:var(--ok-soft);border-color:var(--ok)}.kpi.ok .n{color:var(--ok)}
-.cols{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px}
-.row{display:grid;grid-template-columns:150px minmax(0,1fr) 92px;gap:10px;align-items:center;margin-bottom:10px}
-.track{height:14px;background:var(--brand-soft);border-radius:99px;overflow:hidden;display:block}
-.track i{display:block;height:100%;background:var(--bar);border-radius:99px}
-.v{font-variant-numeric:tabular-nums;text-align:right;font-size:13px}
-.tablewrap{overflow-x:auto}
-table{border-collapse:collapse;width:100%}
-th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
-th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
-td.t{font-variant-numeric:tabular-nums;font-weight:600}
-.pill{display:inline-block;padding:1px 10px;border-radius:99px;background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn);font-size:13px}
-tr.key td{background:var(--warn-soft)}tr.key td.t{color:var(--warn)}
-.faq{border-top:1px solid var(--line);padding:12px 0}
-.faq:first-of-type{border-top:0}
-.faq b{display:block}
-.states{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.chip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:99px;padding:4px 12px;cursor:pointer;background:var(--surface)}
-.chip:has(input:checked){background:var(--warn-soft);border-color:var(--warn);color:var(--warn);font-weight:600}
-ul{margin:0;padding-left:20px}
-footer{color:var(--muted);font-size:12px;text-align:center}
-.tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px;align-self:flex-start;flex-wrap:wrap}
-.tab{background:transparent;color:var(--muted);border:0;padding:9px 16px;border-radius:8px;font-weight:600}
-.tab[aria-selected=true]{background:var(--brand);color:var(--on-brand)}
-.stack{display:flex;flex-direction:column;gap:20px}
-.field{display:flex;gap:10px;flex-wrap:wrap}
-.field input[type=text]{flex:1;min-width:200px;font:inherit;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
-.qchip{background:var(--brand-soft);color:var(--brand);border:1px solid var(--brand);font-weight:500;padding:6px 12px;border-radius:99px;font-size:14px;text-align:left}
-.chat{display:flex;flex-direction:column;gap:10px;margin-top:14px}
-.bub{max-width:85%;padding:10px 14px;border-radius:14px;white-space:pre-wrap}
-.bub.yo{align-self:flex-end;background:var(--brand);color:var(--on-brand);border-bottom-right-radius:4px}
-.bub.bot{align-self:flex-start;background:var(--brand-soft);border-bottom-left-radius:4px}
-.canales{display:flex;flex-wrap:wrap;gap:10px}
-.canal{border:1px solid var(--line);border-radius:10px;padding:10px 16px;font-weight:600;background:var(--bg)}
-.estres{margin-top:12px}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-[hidden]{display:none!important}
-@media (max-width:720px){.steps,.cols,.guide{grid-template-columns:1fr}.row{grid-template-columns:110px minmax(0,1fr) 80px}}
-</style>
+<link rel="stylesheet" href="estilos.css">
 </head>
 <body>
 <div class="appbar"><div class="in">
@@ -113,15 +18,11 @@ footer{color:var(--muted);font-size:12px;text-align:center}
     <text x="24" y="43.5" text-anchor="middle" font-family="Space Grotesk,sans-serif" font-weight="700" font-size="9" fill="var(--on-brand)">3</text>
   </svg>
   <div><div class="brandname">Grupito 3</div><div class="brandsub">Portal de la mesa de ayuda · Panel del coordinador</div></div>
+  <a class="btn sec applink" href="/estudiantes" target="_blank" rel="noopener">Abrir atención a estudiantes</a>
 </div></div>
 
 <div class="wrap">
-  <nav class="tabs" role="tablist" aria-label="Secciones del portal">
-    <button type="button" class="tab" role="tab" id="tabCoord" aria-selected="true">Panel del coordinador</button>
-    <button type="button" class="tab" role="tab" id="tabEst" aria-selected="false">Atención a estudiantes</button>
-  </nav>
-
-  <div id="vistaCoord" class="stack">
+  <div class="stack">
   <header>
     <h1>Convierte tu Excel de tickets en un informe claro</h1>
     <p class="sub">Sube el archivo y obtendrás el hallazgo prioritario, el resumen de gestión y los tickets a seguir.</p>
@@ -155,35 +56,6 @@ footer{color:var(--muted);font-size:12px;text-align:center}
   <div id="resultado" hidden></div>
   </div>
 
-  <div id="vistaEst" class="stack" hidden>
-    <header>
-      <h1>¿En qué podemos ayudarte?</h1>
-      <p class="sub">Consulta el estado de tu solicitud, pregunta por un problema frecuente o revisa cómo contactarnos.</p>
-    </header>
-    <section aria-labelledby="h-est">
-      <h2 id="h-est">Consultar el estado de mi ticket</h2>
-      <form class="field" id="formEstado">
-        <input type="text" id="ticketId" placeholder="Escribe tu TicketID, por ejemplo T-005" aria-label="TicketID" autocomplete="off">
-        <button type="submit">Consultar</button>
-      </form>
-      <div id="estadoTicket" class="estres" aria-live="polite"></div>
-    </section>
-    <section aria-labelledby="h-ia">
-      <h2 id="h-ia">Pregúntale a la mesa de ayuda</h2>
-      <p class="sub" style="margin:0">Elige un problema frecuente o escribe tu pregunta.</p>
-      <div class="chips" id="chipsPreg"></div>
-      <form class="field" id="formPreg">
-        <input type="text" id="preg" placeholder="Escribe tu pregunta" aria-label="Tu pregunta" maxlength="500" autocomplete="off">
-        <button type="submit" id="btnPreg">Enviar</button>
-      </form>
-      <div class="chat" id="chat" aria-live="polite"></div>
-      <p class="note">Las respuestas son orientativas. Si el problema continúa, registra tu caso por uno de los canales.</p>
-    </section>
-    <section aria-labelledby="h-can">
-      <h2 id="h-can">Canales de atención</h2>
-      <div class="canales" id="canales"></div>
-    </section>
-  </div>
   <footer>Grupito 3 · Informe generado con la skill «Informe de mesa de ayuda»</footer>
 </div>
 
@@ -301,9 +173,12 @@ function calcular(){
   return {T, porCat, porEst, pendT, pendCat, hz, topCat: lideres(porCat), topPend: lideres(pendCat)};
 }
 
+function guardarParaEstudiantes(){
+  try { localStorage.setItem('g3_tickets', JSON.stringify({tickets, id: metaCols.id !== undefined, desc: metaCols.desc !== undefined, pend: [...window.pendSel]})); } catch {}
+}
 let ultimo = 0;
 async function analizar(){
-  const c = calcular(), mi = ++seq; ultimo = mi;
+  const c = calcular(), mi = ++seq; ultimo = mi; guardarParaEstudiantes();
   pintar(c, null, true);
   msg('Generando preguntas frecuentes con la skill…');
   try {
@@ -362,58 +237,6 @@ function pintar(c, ia, cargando){
   }));
 }
 
-// ---------- Atención a estudiantes ----------
-const DEF_PROB = [
-  {texto:'La plataforma del curso queda cargando.', categoria:'Aula virtual'},
-  {texto:'No puedo enviar correos desde mi cuenta institucional.', categoria:'Correo institucional'},
-  {texto:'El sistema no muestra mi pago de matrícula.', categoria:'Matrícula'},
-  {texto:'El enlace del libro digital indica acceso denegado.', categoria:'Biblioteca digital'}
-];
-function problemas(){
-  if (!tickets.length || metaCols.desc === undefined) return DEF_PROB;
-  const m = new Map();
-  tickets.forEach(t => { if (!t.descripcion) return; const k = norm(t.descripcion); const g = m.get(k) || {texto:t.descripcion, categoria:t.categoria, cantidad:0}; g.cantidad++; m.set(k,g); });
-  return [...m.values()].sort((a,b)=>b.cantidad-a.cantidad).slice(0,5);
-}
-function canales(){ const c = [...new Set(tickets.map(t=>t.canal).filter(Boolean))]; return c.length ? c : ['Formulario','Correo','Teléfono']; }
-function pintarEst(){
-  $('chipsPreg').innerHTML = problemas().map((p,i)=>`<button type="button" class="qchip" data-i="${i}">${esc(p.texto.replace(/\.$/,''))}</button>`).join('');
-  document.querySelectorAll('.qchip').forEach(b => b.addEventListener('click', () => { const p = problemas()[b.dataset.i]; $('preg').value = 'Tengo este problema: ' + p.texto; $('formPreg').requestSubmit(); }));
-  $('canales').innerHTML = canales().map(c=>`<span class="canal">${esc(c)}</span>`).join('');
-}
-function mostrar(vista){
-  const est = vista === 'est';
-  $('vistaCoord').hidden = est; $('vistaEst').hidden = !est;
-  $('tabCoord').setAttribute('aria-selected', String(!est)); $('tabEst').setAttribute('aria-selected', String(est));
-  if (est) pintarEst();
-}
-$('tabCoord').addEventListener('click', () => mostrar('coord'));
-$('tabEst').addEventListener('click', () => mostrar('est'));
-
-$('formEstado').addEventListener('submit', e => {
-  e.preventDefault();
-  const q = norm($('ticketId').value), out = $('estadoTicket');
-  if (!q) { out.innerHTML = '<div class="msg">Escribe tu TicketID.</div>'; return; }
-  if (!tickets.length || metaCols.id === undefined) { out.innerHTML = '<div class="msg">Aún no hay tickets cargados. Pide al coordinador que cargue el archivo en el panel.</div>'; return; }
-  const t = tickets.find(x => norm(x.id) === q);
-  if (!t) { out.innerHTML = '<div class="msg err">No encontramos ese TicketID. Revisa que esté bien escrito.</div>'; return; }
-  const pend = window.pendSel && window.pendSel.has(t.estado);
-  out.innerHTML = `<div class="msg"><b>${esc(t.id)}</b> · ${esc(t.categoria || 'Sin categoría')} · <span class="${pend?'pill':''}">${esc(t.estado || 'Sin estado')}</span><br>${pend ? 'Tu solicitud sigue en atención.' : (t.estado ? 'Tu solicitud ya fue atendida.' : 'Aún no hay un estado registrado para tu solicitud.')}</div>`;
-});
-
-function burbuja(clase, texto){ const d = document.createElement('div'); d.className = 'bub ' + clase; d.textContent = texto; $('chat').appendChild(d); d.scrollIntoView({block:'nearest'}); return d; }
-$('formPreg').addEventListener('submit', async e => {
-  e.preventDefault();
-  const q = $('preg').value.trim(); if (!q) return;
-  burbuja('yo', q); $('preg').value = '';
-  const espera = burbuja('bot', 'Escribiendo…'); $('btnPreg').disabled = true;
-  try {
-    const r = await fetch('/api/ayuda', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({pregunta:q, problemas:problemas(), canales:canales()})});
-    const j = await r.json();
-    espera.textContent = r.ok ? j.respuesta : (j.error || 'No pude responder en este momento.');
-  } catch { espera.textContent = 'No pude responder en este momento. Intenta de nuevo o contacta a la mesa de ayuda.'; }
-  $('btnPreg').disabled = false;
-});
 </script>
 </body>
 </html>
