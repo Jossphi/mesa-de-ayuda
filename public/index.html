@@ -63,7 +63,7 @@
       <a class="btn sec" href="Mesa_de_ayuda_ejemplo.xlsx" download>Descargar ejemplo</a>
       <a class="btn sec" href="Mesa_de_ayuda_ejemplo_casos_especiales.xlsx" download>Ejemplo con casos especiales</a>
     </div>
-    <p class="msg" id="origen" hidden>Archivo cargado desde la carpeta <b>Maestria</b> de Google Drive: «Mesa de ayuda» (copia del 22/11/2026). Puedes subir otro archivo cuando quieras.</p>
+    <p class="msg" id="origen" hidden></p>
     <div id="hojaBox" hidden style="margin-top:12px"><label for="hoja">Hoja con los tickets: </label><select id="hoja"></select></div>
     <p class="note">El archivo se lee en tu navegador. Solo se envían a la IA el ID, la categoría, el estado y la descripción de cada ticket.</p>
   </section>
@@ -100,15 +100,15 @@ let workbook = null, tickets = [], obsDatos = [], metaCols = {}, seq = 0;
 
 function msg(texto, tipo){ const e=$('estado'); e.hidden=!texto; e.className='msg'+(tipo==='err'?' err':''); e.textContent=texto||''; }
 
-$('archivo').addEventListener('change', async e => { const f=e.target.files[0]; if(f) cargar(await f.arrayBuffer()); });
+$('archivo').addEventListener('change', async e => { const f=e.target.files[0]; if(f) cargarManual(await f.arrayBuffer()); });
 $('ejemplo').addEventListener('click', async () => {
-  try { const r = await fetch('Mesa_de_ayuda_ejemplo.xlsx'); cargar(await r.arrayBuffer()); }
+  try { const r = await fetch('Mesa_de_ayuda_ejemplo.xlsx'); cargarManual(await r.arrayBuffer()); }
   catch { msg('No se pudo cargar el ejemplo.','err'); }
 });
 const drop = $('drop');
 ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
 ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
-drop.addEventListener('drop', async e => { const f = e.dataTransfer.files[0]; if (f) cargar(await f.arrayBuffer()); });
+drop.addEventListener('drop', async e => { const f = e.dataTransfer.files[0]; if (f) cargarManual(await f.arrayBuffer()); });
 $('hoja').addEventListener('change', () => procesarHoja($('hoja').value));
 
 function cargar(buf){
@@ -267,8 +267,8 @@ const tokenGet = () => { try { return sessionStorage.getItem('g3_token') || ''; 
 let solTimer = null;
 function setAuth(ok){
   $('login').hidden = ok; $('app').hidden = !ok; $('acciones').hidden = !ok;
-  if (!ok) { try { sessionStorage.removeItem('g3_token'); } catch {} clearInterval(solTimer); solTimer = null; }
-  else { cargarSol(); cargarMaestria(); clearInterval(solTimer); solTimer = setInterval(cargarSol, 15000); }
+  if (!ok) { try { sessionStorage.removeItem('g3_token'); } catch {} clearInterval(solTimer); solTimer = null; clearInterval(live.timer); live.timer = null; live.hash = ''; }
+  else { cargarSol(); sincronizarDrive(); clearInterval(solTimer); solTimer = setInterval(cargarSol, 15000); clearInterval(live.timer); live.timer = setInterval(sincronizarDrive, 30000); }
 }
 $('formLogin').addEventListener('submit', async e => {
   e.preventDefault();
@@ -283,17 +283,33 @@ $('formLogin').addEventListener('submit', async e => {
 });
 $('rellenar').addEventListener('click', () => { $('usuario').value = 'coordinador'; $('clave').value = '12345678'; $('loginError').hidden = true; $('clave').focus(); });
 $('salir').addEventListener('click', () => setAuth(false));
-if (tokenGet()) setAuth(true);
 
-// ---------- Excel de la carpeta Maestria (cargado al entrar) ----------
-let maestriaIntentada = false;
-async function cargarMaestria(){
-  if (maestriaIntentada || tickets.length) return;
-  maestriaIntentada = true;
+// ---------- Excel de Google Drive en vivo (carpeta Maestria) ----------
+const live = {on: true, hash: '', timer: null, copia: false, leido: false};
+async function hashBuf(buf){ const d = await crypto.subtle.digest('SHA-1', buf); return [...new Uint8Array(d)].map(x => x.toString(16).padStart(2,'0')).join(''); }
+function hora(){ return new Date().toLocaleTimeString('es'); }
+function mostrarOrigen(modo, nuevos){
+  const o = $('origen'); o.hidden = false; o.className = 'msg';
+  if (modo === 'drive') o.innerHTML = '<b>Conectado a Google Drive</b> · carpeta Maestria · «Mesa de ayuda». Se actualiza solo cada 30 segundos. Última lectura: ' + hora() + '.' + (nuevos > 0 ? ' <b>' + nuevos + ' ticket(s) nuevo(s) detectado(s).</b>' : '');
+  else if (modo === 'copia') { o.className = 'msg err'; o.innerHTML = live.leido ? 'No se pudo leer Drive en este momento. Se muestran los últimos datos leídos y se reintentará solo.' : 'No se pudo leer Drive en este momento. Se muestra la copia del 22/11/2026 y se reintentará solo.'; }
+  else { o.innerHTML = 'Mostrando el archivo que subiste. <button type="button" class="sec btn-s" id="volverDrive">Volver a Drive en vivo</button>'; $('volverDrive').addEventListener('click', () => { live.on = true; live.hash = ''; sincronizarDrive(); }); }
+}
+function cargarManual(buf){ live.on = false; cargar(buf); mostrarOrigen('manual'); }
+async function sincronizarDrive(){
+  if (!live.on) return;
   try {
-    const r = await fetch('Mesa_de_ayuda_maestria.xlsx'); if (!r.ok) return;
-    cargar(await r.arrayBuffer()); $('origen').hidden = false;
-  } catch {}
+    const r = await fetch('/api/hoja', {headers:{authorization:'Bearer ' + tokenGet()}});
+    if (r.status === 401) return setAuth(false);
+    if (!r.ok) throw new Error('drive');
+    const buf = await r.arrayBuffer(), h = await hashBuf(buf.slice(0));
+    let nuevos = 0;
+    if (h !== live.hash) { const antes = live.hash ? tickets.length : 0; live.hash = h; cargar(buf); nuevos = antes ? Math.max(0, tickets.length - antes) : 0; }
+    live.copia = false; live.leido = true; mostrarOrigen('drive', nuevos);
+  } catch {
+    if (!tickets.length || live.copia) { /* sigue con lo último cargado */ }
+    if (!tickets.length) { try { const r = await fetch('Mesa_de_ayuda_maestria.xlsx'); if (r.ok) cargar(await r.arrayBuffer()); } catch {} }
+    live.copia = true; mostrarOrigen('copia');
+  }
 }
 
 // ---------- Solicitudes de estudiantes ----------
@@ -340,6 +356,9 @@ function pintarSol(lista){
     cargarSol();
   }));
 }
+
+// Restaurar la sesión al recargar (al final, cuando todo está definido)
+if (tokenGet()) setAuth(true);
 </script>
 </body>
 </html>
