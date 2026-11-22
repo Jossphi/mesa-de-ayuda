@@ -93,3 +93,8 @@ footer{color:var(--muted);font-size:12px;text-align:center}
 [hidden]{display:none!important}
 @media (max-width:720px){.steps,.cols,.guide{grid-template-columns:1fr}.row{grid-template-columns:110px minmax(0,1fr) 80px}}
 .applink{margin-left:auto}
+.acciones{display:flex;gap:8px;flex-wrap:wrap}
+.loginwrap{display:grid;place-items:center;padding:40px 16px}
+.loginbox{width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:24px}
+.loginbox label{font-weight:600;font-size:14px;margin-top:4px}
+.loginbox input{font:inherit;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}

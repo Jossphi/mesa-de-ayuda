@@ -18,10 +18,25 @@
     <text x="24" y="43.5" text-anchor="middle" font-family="Space Grotesk,sans-serif" font-weight="700" font-size="9" fill="var(--on-brand)">3</text>
   </svg>
   <div><div class="brandname">Grupito 3</div><div class="brandsub">Portal de la mesa de ayuda · Panel del coordinador</div></div>
-  <a class="btn sec applink" href="/estudiantes" target="_blank" rel="noopener">Abrir atención a estudiantes</a>
+  <div class="applink acciones" id="acciones" hidden><a class="btn sec" href="/estudiantes" target="_blank" rel="noopener">Abrir atención a estudiantes</a><button type="button" class="sec" id="salir">Cerrar sesión</button></div>
 </div></div>
 
-<div class="wrap">
+<main class="loginwrap" id="login">
+  <form class="loginbox" id="formLogin" autocomplete="off">
+    <h1>Acceso del coordinador</h1>
+    <p class="sub">Ingresa para ver el panel de la mesa de ayuda.</p>
+    <label for="usuario">Usuario</label>
+    <input type="text" id="usuario" autocomplete="off" required>
+    <label for="clave">Clave</label>
+    <input type="password" id="clave" autocomplete="off" required>
+    <div id="loginError" class="msg err" role="alert" hidden>Usuario o clave incorrectos.</div>
+    <button type="submit">Ingresar</button>
+    <button type="button" class="sec" id="rellenar">Rellenar acceso de ejemplo</button>
+    <p class="note">Acceso de demostración: el botón completa los datos solo para mostrar el flujo.</p>
+  </form>
+</main>
+
+<div class="wrap" id="app" hidden>
   <div class="stack">
   <header>
     <h1>Convierte tu Excel de tickets en un informe claro</h1>
@@ -237,6 +252,21 @@ function pintar(c, ia, cargando){
   }));
 }
 
+
+// ---------- Acceso de demostración del coordinador ----------
+const DEMO_USER = 'coordinador', DEMO_PASS = '12345678';
+function setAuth(ok){
+  $('login').hidden = ok; $('app').hidden = !ok; $('acciones').hidden = !ok;
+  try { ok ? sessionStorage.setItem('g3_auth','1') : sessionStorage.removeItem('g3_auth'); } catch {}
+}
+$('formLogin').addEventListener('submit', e => {
+  e.preventDefault();
+  if ($('usuario').value.trim() === DEMO_USER && $('clave').value === DEMO_PASS) { $('loginError').hidden = true; $('clave').value = ''; setAuth(true); }
+  else $('loginError').hidden = false;
+});
+$('rellenar').addEventListener('click', () => { $('usuario').value = DEMO_USER; $('clave').value = DEMO_PASS; $('loginError').hidden = true; $('clave').focus(); });
+$('salir').addEventListener('click', () => setAuth(false));
+try { if (sessionStorage.getItem('g3_auth') === '1') setAuth(true); } catch {}
 </script>
 </body>
 </html>
