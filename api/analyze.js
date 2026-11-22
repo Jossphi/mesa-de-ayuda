@@ -10,8 +10,9 @@ function leerSkill() {
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido' });
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return res.status(500).json({ error: 'Falta configurar ANTHROPIC_API_KEY en Vercel.' });
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const claudeKey = process.env.ANTHROPIC_API_KEY;
+  if (!geminiKey && !claudeKey) return res.status(500).json({ error: 'Falta configurar GEMINI_API_KEY (o ANTHROPIC_API_KEY) en Vercel.' });
 
   const { tickets, resumen } = req.body || {};
   if (!Array.isArray(tickets) || tickets.length === 0) return res.status(400).json({ error: 'No hay tickets para analizar.' });
@@ -37,25 +38,42 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional ni bloques 
   const user = 'Indicadores calculados:\n' + JSON.stringify(resumen || {}) + '\n\nTickets:\n' + JSON.stringify(limpios);
 
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5',
-        max_tokens: 2000,
-        system,
-        messages: [{ role: 'user', content: user }]
-      })
-    });
-    const data = await r.json();
-    if (!r.ok) return res.status(502).json({ error: (data.error && data.error.message) || 'Error al consultar a Claude.' });
-    const texto = (data.content || []).map(b => b.text || '').join('');
+    let texto;
+    if (geminiKey) {
+      const modelo = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + modelo + ':generateContent', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': geminiKey },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: system }] },
+          contents: [{ role: 'user', parts: [{ text: user }] }],
+          generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4000 }
+        })
+      });
+      const data = await r.json();
+      if (!r.ok) return res.status(502).json({ error: (data.error && data.error.message) || 'Error al consultar a Gemini.' });
+      texto = ((data.candidates && data.candidates[0] && data.candidates[0].content.parts) || []).map(b => b.text || '').join('');
+    } else {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-api-key': claudeKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5',
+          max_tokens: 2000,
+          system,
+          messages: [{ role: 'user', content: user }]
+        })
+      });
+      const data = await r.json();
+      if (!r.ok) return res.status(502).json({ error: (data.error && data.error.message) || 'Error al consultar a Claude.' });
+      texto = (data.content || []).map(b => b.text || '').join('');
+    }
     const ini = texto.indexOf('{'), fin = texto.lastIndexOf('}');
     const json = JSON.parse(texto.slice(ini, fin + 1));
     const validos = new Set(limpios.map(t => t.id));
     if (json.hallazgo && Array.isArray(json.hallazgo.ids)) json.hallazgo.ids = json.hallazgo.ids.filter(i => validos.has(i));
     return res.status(200).json(json);
   } catch (e) {
-    return res.status(502).json({ error: 'No se pudo interpretar la respuesta de Claude.' });
+    return res.status(502).json({ error: 'No se pudo interpretar la respuesta de la IA.' });
   }
 };
