@@ -37,17 +37,17 @@
 </main>
 
 <div class="wrap" id="app" hidden>
-  <div class="stack">
+  <nav class="tabs" role="tablist" aria-label="Secciones del panel">
+    <button type="button" class="tab" role="tab" id="tabDash" aria-selected="true">Dashboard</button>
+    <button type="button" class="tab" role="tab" id="tabSol" aria-selected="false">Solicitudes de estudiantes <span class="badge" id="solBadge" hidden></span></button>
+  </nav>
+
+  <div class="stack" id="vistaDash">
   <header>
     <h1>Convierte tu Excel de tickets en un informe claro</h1>
     <p class="sub">Sube el archivo y obtendrás el hallazgo prioritario, el resumen de gestión y los tickets a seguir.</p>
   </header>
 
-  <section aria-labelledby="h-sol">
-    <h2 id="h-sol">Solicitudes de estudiantes <span class="pill" id="solCount" hidden></span></h2>
-    <div id="solBody" class="tablewrap"><p class="note">Cargando solicitudes…</p></div>
-    <p class="note">Se actualiza solo cada 15 segundos. Escribe una respuesta y el estudiante la verá al consultar su ticket.</p>
-  </section>
 
 
   <section aria-labelledby="h-up">
@@ -79,6 +79,18 @@
   <div id="resultado" hidden></div>
   </div>
 
+  <div class="stack" id="vistaSol" hidden>
+    <header>
+      <h1>Solicitudes de estudiantes</h1>
+      <p class="sub">Los tickets que llegan desde la página de atención a estudiantes. También se suman al reporte del Dashboard.</p>
+    </header>
+  <section aria-labelledby="h-sol">
+    <h2 id="h-sol">Solicitudes de estudiantes <span class="pill" id="solCount" hidden></span></h2>
+    <div id="solBody" class="tablewrap"><p class="note">Cargando solicitudes…</p></div>
+    <p class="note">Se actualiza solo cada 15 segundos. Escribe una respuesta y el estudiante la verá al consultar su ticket.</p>
+  </section>
+  </div>
+
   <footer>Grupito 3 · Informe generado con la skill «Informe de mesa de ayuda»</footer>
 </div>
 
@@ -97,6 +109,23 @@ const ALIAS = {
 const PENDIENTE_RX = /pendiente|abierto|en ?proceso|en ?curso|sin ?resolver|nuevo|en ?espera/i;
 
 let workbook = null, tickets = [], obsDatos = [], metaCols = {}, seq = 0;
+let ticketsExcel = [], solicitudes = [], firmaSol = '';
+// Une los tickets del Excel con los de la atención a estudiantes (el estado de la base de datos manda si el ID ya está en el Excel)
+function combinar(){
+  const ids = new Set(solicitudes.map(x => x.ticket_id));
+  const base = ticketsExcel.filter(t => !t.id || !ids.has(t.id));
+  const extra = solicitudes.map(x => ({id:x.ticket_id, categoria:x.categoria, estado:x.estado, descripcion:x.descripcion, canal:'Portal de estudiantes'}));
+  return base.concat(extra);
+}
+function recombinar(){
+  if (!ticketsExcel.length) return;
+  tickets = combinar();
+  const estados = [...new Set(tickets.map(t => t.estado).filter(Boolean))], previos = window.estados || [];
+  const sel = new Set([...(window.pendSel || [])].filter(e => estados.includes(e)));
+  estados.filter(e => !previos.includes(e) && PENDIENTE_RX.test(e)).forEach(e => sel.add(e));
+  window.estados = estados; window.pendSel = sel;
+  analizar();
+}
 
 function msg(texto, tipo){ const e=$('estado'); e.hidden=!texto; e.className='msg'+(tipo==='err'?' err':''); e.textContent=texto||''; }
 
@@ -153,7 +182,7 @@ function procesarHoja(nombre){
       vistos.set(t.id, t);
     } else vistos.set('__fila'+vistos.size, t);
   }
-  tickets = [...vistos.values()];
+  ticketsExcel = [...vistos.values()]; tickets = combinar();
   if (descartadas) obsDatos.push(descartadas+' fila(s) de totales excluida(s).');
   if (cols.id === undefined) obsDatos.push('No hay columna TicketID: el total corresponde a filas de tickets y no se pudo verificar duplicados ni citar identificadores.');
   if (cols.cat === undefined) obsDatos.push('No hay columna de Categoría: la distribución y los rankings por categoría quedan limitados.');
@@ -224,7 +253,7 @@ function pintar(c, ia, cargando){
   const ids = hz && hz.ids && hz.ids.length ? hz.ids : [];
   const seg = [...c.pendT].sort((a,b)=>(ids.includes(b.id)-ids.includes(a.id))).slice(0,5);
   const topTxt = (l,tot) => l.length ? l.map(x=>esc(x[0])).join(' y ') + ' ('+l[0][1]+(tot?' de '+tot:'')+(l.length>1?' cada una, empate':'')+')' : 'No disponible';
-  const obs = [...obsDatos, ...(ia && ia.observaciones || [])];
+  const obs = [...obsDatos, ...(solicitudes.length ? [solicitudes.length + ' ticket(s) provienen de la atención a estudiantes del portal y ya están incluidos en los totales.'] : []), ...(ia && ia.observaciones || [])];
   const chips = window.estados.length ? `<div class="states" role="group" aria-label="Estados que cuentan como pendientes">${window.estados.map((e,i)=>`<label class="chip"><input type="checkbox" data-e="${esc(e)}" ${window.pendSel.has(e)?'checked':''}> ${esc(e)}</label>`).join('')}</div>` : '';
   $('resultado').hidden = false; $('guia').hidden = true;
   $('resultado').innerHTML = `
@@ -267,7 +296,7 @@ const tokenGet = () => { try { return sessionStorage.getItem('g3_token') || ''; 
 let solTimer = null;
 function setAuth(ok){
   $('login').hidden = ok; $('app').hidden = !ok; $('acciones').hidden = !ok;
-  if (!ok) { try { sessionStorage.removeItem('g3_token'); } catch {} clearInterval(solTimer); solTimer = null; clearInterval(live.timer); live.timer = null; live.hash = ''; }
+  if (!ok) { verPestana(false); try { sessionStorage.removeItem('g3_token'); } catch {} clearInterval(solTimer); solTimer = null; clearInterval(live.timer); live.timer = null; live.hash = ''; }
   else { cargarSol(); sincronizarDrive(); clearInterval(solTimer); solTimer = setInterval(cargarSol, 15000); clearInterval(live.timer); live.timer = setInterval(sincronizarDrive, 30000); }
 }
 $('formLogin').addEventListener('submit', async e => {
@@ -319,7 +348,10 @@ async function cargarSol(){
     const r = await fetch('/api/tickets', {headers:{authorization:'Bearer ' + tokenGet()}});
     if (r.status === 401) return setAuth(false);
     const j = await r.json(); if (!r.ok) throw new Error();
-    pintarSol(j.tickets || []);
+    const lista = j.tickets || [];
+    const firma = JSON.stringify(lista.map(t => [t.ticket_id, t.estado, t.categoria, t.descripcion]));
+    if (firma !== firmaSol) { firmaSol = firma; solicitudes = lista; recombinar(); }
+    pintarSol(lista);
   } catch { if (!box.querySelector('table')) box.innerHTML = '<p class="note">No se pudieron cargar las solicitudes. Se reintentará en unos segundos.</p>'; }
 }
 const fechaCorta = d => new Date(d).toLocaleString('es',{dateStyle:'short',timeStyle:'short'});
@@ -329,9 +361,10 @@ async function actualizarTicket(id, datos){
 }
 function pintarSol(lista){
   const box = $('solBody');
+  const pend = lista.filter(t => t.estado !== 'Resuelto').length;
+  $('solBadge').hidden = !pend; $('solBadge').textContent = pend;
   // no pisar lo que el coordinador está escribiendo
   if (document.activeElement && document.activeElement.tagName === 'TEXTAREA' && box.contains(document.activeElement)) return;
-  const pend = lista.filter(t => t.estado !== 'Resuelto').length;
   $('solCount').hidden = !lista.length; $('solCount').textContent = pend + ' pendiente(s) de ' + lista.length;
   if (!lista.length) { box.innerHTML = '<p>Todavía no hay solicitudes de estudiantes.</p>'; return; }
   const borradores = {}; box.querySelectorAll('textarea[data-id]').forEach(t => { if (t.value) borradores[t.dataset.id] = t.value; });
@@ -356,6 +389,14 @@ function pintarSol(lista){
     cargarSol();
   }));
 }
+
+// ---------- Pestañas del panel ----------
+function verPestana(sol){
+  $('vistaDash').hidden = sol; $('vistaSol').hidden = !sol;
+  $('tabDash').setAttribute('aria-selected', String(!sol)); $('tabSol').setAttribute('aria-selected', String(sol));
+}
+$('tabDash').addEventListener('click', () => verPestana(false));
+$('tabSol').addEventListener('click', () => verPestana(true));
 
 // Restaurar la sesión al recargar (al final, cuando todo está definido)
 if (tokenGet()) setAuth(true);

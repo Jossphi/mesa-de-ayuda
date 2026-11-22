@@ -116,3 +116,5 @@ footer{color:var(--muted);font-size:12px;text-align:center}
 .sol-acts{display:flex;flex-wrap:wrap;gap:8px}
 .form input[type=text]{font:inherit;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
 .respuesta{margin-top:8px;background:var(--brand-soft);border-radius:8px;padding:8px 12px;white-space:pre-wrap}
+.badge{display:inline-block;min-width:20px;padding:0 6px;border-radius:99px;background:var(--warn);color:var(--surface);font-size:12px;font-weight:700;text-align:center;margin-left:6px}
+.tab[aria-selected=true] .badge{background:var(--on-brand);color:var(--brand)}
