@@ -83,6 +83,21 @@ tr.key td{background:var(--warn-soft)}tr.key td.t{color:var(--warn)}
 .chip:has(input:checked){background:var(--warn-soft);border-color:var(--warn);color:var(--warn);font-weight:600}
 ul{margin:0;padding-left:20px}
 footer{color:var(--muted);font-size:12px;text-align:center}
+.tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px;align-self:flex-start;flex-wrap:wrap}
+.tab{background:transparent;color:var(--muted);border:0;padding:9px 16px;border-radius:8px;font-weight:600}
+.tab[aria-selected=true]{background:var(--brand);color:var(--on-brand)}
+.stack{display:flex;flex-direction:column;gap:20px}
+.field{display:flex;gap:10px;flex-wrap:wrap}
+.field input[type=text]{flex:1;min-width:200px;font:inherit;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.qchip{background:var(--brand-soft);color:var(--brand);border:1px solid var(--brand);font-weight:500;padding:6px 12px;border-radius:99px;font-size:14px;text-align:left}
+.chat{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.bub{max-width:85%;padding:10px 14px;border-radius:14px;white-space:pre-wrap}
+.bub.yo{align-self:flex-end;background:var(--brand);color:var(--on-brand);border-bottom-right-radius:4px}
+.bub.bot{align-self:flex-start;background:var(--brand-soft);border-bottom-left-radius:4px}
+.canales{display:flex;flex-wrap:wrap;gap:10px}
+.canal{border:1px solid var(--line);border-radius:10px;padding:10px 16px;font-weight:600;background:var(--bg)}
+.estres{margin-top:12px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 [hidden]{display:none!important}
 @media (max-width:720px){.steps,.cols,.guide{grid-template-columns:1fr}.row{grid-template-columns:110px minmax(0,1fr) 80px}}
@@ -101,6 +116,12 @@ footer{color:var(--muted);font-size:12px;text-align:center}
 </div></div>
 
 <div class="wrap">
+  <nav class="tabs" role="tablist" aria-label="Secciones del portal">
+    <button type="button" class="tab" role="tab" id="tabCoord" aria-selected="true">Panel del coordinador</button>
+    <button type="button" class="tab" role="tab" id="tabEst" aria-selected="false">Atención a estudiantes</button>
+  </nav>
+
+  <div id="vistaCoord" class="stack">
   <header>
     <h1>Convierte tu Excel de tickets en un informe claro</h1>
     <p class="sub">Sube el archivo y obtendrás el hallazgo prioritario, el resumen de gestión y los tickets a seguir.</p>
@@ -132,6 +153,37 @@ footer{color:var(--muted);font-size:12px;text-align:center}
   </div>
 
   <div id="resultado" hidden></div>
+  </div>
+
+  <div id="vistaEst" class="stack" hidden>
+    <header>
+      <h1>¿En qué podemos ayudarte?</h1>
+      <p class="sub">Consulta el estado de tu solicitud, pregunta por un problema frecuente o revisa cómo contactarnos.</p>
+    </header>
+    <section aria-labelledby="h-est">
+      <h2 id="h-est">Consultar el estado de mi ticket</h2>
+      <form class="field" id="formEstado">
+        <input type="text" id="ticketId" placeholder="Escribe tu TicketID, por ejemplo T-005" aria-label="TicketID" autocomplete="off">
+        <button type="submit">Consultar</button>
+      </form>
+      <div id="estadoTicket" class="estres" aria-live="polite"></div>
+    </section>
+    <section aria-labelledby="h-ia">
+      <h2 id="h-ia">Pregúntale a la mesa de ayuda</h2>
+      <p class="sub" style="margin:0">Elige un problema frecuente o escribe tu pregunta.</p>
+      <div class="chips" id="chipsPreg"></div>
+      <form class="field" id="formPreg">
+        <input type="text" id="preg" placeholder="Escribe tu pregunta" aria-label="Tu pregunta" maxlength="500" autocomplete="off">
+        <button type="submit" id="btnPreg">Enviar</button>
+      </form>
+      <div class="chat" id="chat" aria-live="polite"></div>
+      <p class="note">Las respuestas son orientativas. Si el problema continúa, registra tu caso por uno de los canales.</p>
+    </section>
+    <section aria-labelledby="h-can">
+      <h2 id="h-can">Canales de atención</h2>
+      <div class="canales" id="canales"></div>
+    </section>
+  </div>
   <footer>Grupito 3 · Informe generado con la skill «Informe de mesa de ayuda»</footer>
 </div>
 
@@ -144,6 +196,7 @@ const ALIAS = {
   id: ['ticketid','ticket','idticket','id','nticket','numeroticket','codigo'],
   cat: ['categoria','category','tipo','area','servicio'],
   estado: ['estado','status','situacion'],
+  canal: ['canal','medio','via'],
   desc: ['descripcion','asunto','detalle','subject','descripciondelproblema']
 };
 const PENDIENTE_RX = /pendiente|abierto|en ?proceso|en ?curso|sin ?resolver|nuevo|en ?espera/i;
@@ -192,7 +245,7 @@ function procesarHoja(nombre){
     const v = campo => cols[campo]===undefined ? '' : String(f[cols[campo]] ?? '').trim();
     if (f.every(c => String(c).trim()==='')) continue;
     if (/^total/i.test(String(f[0]).trim()) || /^total/i.test(v('id'))) { descartadas++; continue; }
-    const t = {id:v('id'), categoria:v('cat'), estado:v('estado'), descripcion:v('desc')};
+    const t = {id:v('id'), categoria:v('cat'), estado:v('estado'), descripcion:v('desc'), canal:v('canal')};
     if (cols.id !== undefined && t.id) {
       if (vistos.has(t.id)) {
         const p = vistos.get(t.id);
@@ -308,6 +361,59 @@ function pintar(c, ia, cargando){
     cb.checked ? window.pendSel.add(cb.dataset.e) : window.pendSel.delete(cb.dataset.e); analizar();
   }));
 }
+
+// ---------- Atención a estudiantes ----------
+const DEF_PROB = [
+  {texto:'La plataforma del curso queda cargando.', categoria:'Aula virtual'},
+  {texto:'No puedo enviar correos desde mi cuenta institucional.', categoria:'Correo institucional'},
+  {texto:'El sistema no muestra mi pago de matrícula.', categoria:'Matrícula'},
+  {texto:'El enlace del libro digital indica acceso denegado.', categoria:'Biblioteca digital'}
+];
+function problemas(){
+  if (!tickets.length || metaCols.desc === undefined) return DEF_PROB;
+  const m = new Map();
+  tickets.forEach(t => { if (!t.descripcion) return; const k = norm(t.descripcion); const g = m.get(k) || {texto:t.descripcion, categoria:t.categoria, cantidad:0}; g.cantidad++; m.set(k,g); });
+  return [...m.values()].sort((a,b)=>b.cantidad-a.cantidad).slice(0,5);
+}
+function canales(){ const c = [...new Set(tickets.map(t=>t.canal).filter(Boolean))]; return c.length ? c : ['Formulario','Correo','Teléfono']; }
+function pintarEst(){
+  $('chipsPreg').innerHTML = problemas().map((p,i)=>`<button type="button" class="qchip" data-i="${i}">${esc(p.texto.replace(/\.$/,''))}</button>`).join('');
+  document.querySelectorAll('.qchip').forEach(b => b.addEventListener('click', () => { const p = problemas()[b.dataset.i]; $('preg').value = 'Tengo este problema: ' + p.texto; $('formPreg').requestSubmit(); }));
+  $('canales').innerHTML = canales().map(c=>`<span class="canal">${esc(c)}</span>`).join('');
+}
+function mostrar(vista){
+  const est = vista === 'est';
+  $('vistaCoord').hidden = est; $('vistaEst').hidden = !est;
+  $('tabCoord').setAttribute('aria-selected', String(!est)); $('tabEst').setAttribute('aria-selected', String(est));
+  if (est) pintarEst();
+}
+$('tabCoord').addEventListener('click', () => mostrar('coord'));
+$('tabEst').addEventListener('click', () => mostrar('est'));
+
+$('formEstado').addEventListener('submit', e => {
+  e.preventDefault();
+  const q = norm($('ticketId').value), out = $('estadoTicket');
+  if (!q) { out.innerHTML = '<div class="msg">Escribe tu TicketID.</div>'; return; }
+  if (!tickets.length || metaCols.id === undefined) { out.innerHTML = '<div class="msg">Aún no hay tickets cargados. Pide al coordinador que cargue el archivo en el panel.</div>'; return; }
+  const t = tickets.find(x => norm(x.id) === q);
+  if (!t) { out.innerHTML = '<div class="msg err">No encontramos ese TicketID. Revisa que esté bien escrito.</div>'; return; }
+  const pend = window.pendSel && window.pendSel.has(t.estado);
+  out.innerHTML = `<div class="msg"><b>${esc(t.id)}</b> · ${esc(t.categoria || 'Sin categoría')} · <span class="${pend?'pill':''}">${esc(t.estado || 'Sin estado')}</span><br>${pend ? 'Tu solicitud sigue en atención.' : (t.estado ? 'Tu solicitud ya fue atendida.' : 'Aún no hay un estado registrado para tu solicitud.')}</div>`;
+});
+
+function burbuja(clase, texto){ const d = document.createElement('div'); d.className = 'bub ' + clase; d.textContent = texto; $('chat').appendChild(d); d.scrollIntoView({block:'nearest'}); return d; }
+$('formPreg').addEventListener('submit', async e => {
+  e.preventDefault();
+  const q = $('preg').value.trim(); if (!q) return;
+  burbuja('yo', q); $('preg').value = '';
+  const espera = burbuja('bot', 'Escribiendo…'); $('btnPreg').disabled = true;
+  try {
+    const r = await fetch('/api/ayuda', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({pregunta:q, problemas:problemas(), canales:canales()})});
+    const j = await r.json();
+    espera.textContent = r.ok ? j.respuesta : (j.error || 'No pude responder en este momento.');
+  } catch { espera.textContent = 'No pude responder en este momento. Intenta de nuevo o contacta a la mesa de ayuda.'; }
+  $('btnPreg').disabled = false;
+});
 </script>
 </body>
 </html>
