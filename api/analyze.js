@@ -28,12 +28,11 @@ module.exports = async (req, res) => {
   const system = leerSkill() + `
 
 ## Modo portal
-Ya se calcularon los indicadores. Solo redacta, siguiendo las instrucciones 3, 4 y 5 de la skill, usando exclusivamente los tickets recibidos.
+Ya se calcularon los indicadores y el hallazgo. Solo redacta, siguiendo las instrucciones 4 y 5 de la skill, usando exclusivamente los tickets recibidos.
 Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional ni bloques de código, con esta forma:
-{"hallazgo":{"hallazgo":"...","evidencia":"...","ids":["T-001"],"accion":"..."},
- "faqs":[{"pregunta":"...","respuesta":"..."}],
+{"faqs":[{"pregunta":"...","respuesta":"..."}],
  "observaciones":["..."]}
-"ids" solo puede contener TicketID presentes en los datos (vacío si no hay TicketID). Hasta 3 preguntas frecuentes.`;
+Hasta 3 preguntas frecuentes.`;
 
   const user = 'Indicadores calculados:\n' + JSON.stringify(resumen || {}) + '\n\nTickets:\n' + JSON.stringify(limpios);
 
@@ -59,7 +58,7 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional ni bloques 
         headers: { 'content-type': 'application/json', 'x-api-key': claudeKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5',
-          max_tokens: 2000,
+          max_tokens: 3000,
           system,
           messages: [{ role: 'user', content: user }]
         })
@@ -69,11 +68,11 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional ni bloques 
       texto = (data.content || []).map(b => b.text || '').join('');
     }
     const ini = texto.indexOf('{'), fin = texto.lastIndexOf('}');
-    const json = JSON.parse(texto.slice(ini, fin + 1));
-    const validos = new Set(limpios.map(t => t.id));
-    if (json.hallazgo && Array.isArray(json.hallazgo.ids)) json.hallazgo.ids = json.hallazgo.ids.filter(i => validos.has(i));
+    let json;
+    try { json = JSON.parse(texto.slice(ini, fin + 1)); }
+    catch (e) { return res.status(502).json({ error: 'La IA no devolvió un formato válido. Intenta de nuevo.' }); }
     return res.status(200).json(json);
   } catch (e) {
-    return res.status(502).json({ error: 'No se pudo interpretar la respuesta de la IA.' });
+    return res.status(502).json({ error: 'No se pudo conectar con la IA (' + (e && e.message ? e.message : 'error') + ').' });
   }
 };

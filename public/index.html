@@ -176,14 +176,29 @@ function calcular(){
   const pc = new Map(); pendT.filter(t=>t.categoria).forEach(t=>pc.set(t.categoria,(pc.get(t.categoria)||0)+1));
   const pendCat = [...pc].sort((a,b)=>b[1]-a[1]);
   const lideres = l => { const r = l.filter(([k])=>k!=='Sin categoría'); return r.length ? r.filter(x=>x[1]===r[0][1]) : []; };
-  return {T, porCat, porEst, pendT, pendCat, topCat: lideres(porCat), topPend: lideres(pendCat)};
+  // Hallazgo simple: el problema (misma descripción) con más tickets pendientes
+  const clave = t => (metaCols.desc !== undefined ? norm(t.descripcion) : norm(t.categoria)) || '';
+  const grupos = new Map();
+  tickets.forEach(t => { const k = clave(t); if (!k) return; const g = grupos.get(k) || {texto: metaCols.desc !== undefined ? t.descripcion : t.categoria, cat: t.categoria, n: 0, pend: []}; g.n++; if (esPend(t)) g.pend.push(t); grupos.set(k, g); });
+  const orden = [...grupos.values()].filter(g => g.pend.length).sort((a,b) => b.pend.length - a.pend.length || b.pend.length/b.n - a.pend.length/a.n);
+  let hz = null;
+  if (orden.length) {
+    const g = orden[0], p = g.pend.length, conId = metaCols.id !== undefined;
+    hz = {
+      hallazgo: '«' + g.texto.replace(/\.$/, '') + '»' + (g.cat && metaCols.desc !== undefined ? ' (' + g.cat + ')' : '') + ' es el problema con más tickets pendientes: ' + p + '.',
+      evidencia: p + ' de ' + g.n + ' ticket(s) con este problema siguen pendientes.' + (conId ? '' : ' El archivo no tiene TicketID, no se pueden citar identificadores.'),
+      ids: conId ? g.pend.map(t => t.id) : [],
+      accion: 'Asignar un responsable que revise este problema, cierre los casos abiertos y avise a los estudiantes afectados.'
+    };
+  }
+  return {T, porCat, porEst, pendT, pendCat, hz, topCat: lideres(porCat), topPend: lideres(pendCat)};
 }
 
 let ultimo = 0;
 async function analizar(){
   const c = calcular(), mi = ++seq; ultimo = mi;
   pintar(c, null, true);
-  msg('Analizando con la skill…');
+  msg('Generando preguntas frecuentes con la skill…');
   try {
     const resumen = {total:c.T, porCategoria:c.porCat, porEstado:c.porEst, estadosPendientes:[...window.pendSel], pendientesPorCategoria:c.pendCat};
     const r = await fetch('/api/analyze', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({tickets, resumen})});
@@ -193,13 +208,13 @@ async function analizar(){
     msg(''); pintar(c, j, false);
   } catch(e){
     if (mi !== ultimo) return;
-    msg('No se pudo generar el hallazgo con la skill: '+e.message+'. Los indicadores sí se calcularon.','err'); pintar(c, null, false);
+    msg('Las preguntas frecuentes no están disponibles: '+e.message,'err'); pintar(c, null, false);
   }
 }
 
 function pintar(c, ia, cargando){
   const max = c.porCat[0] ? c.porCat[0][1] : 1;
-  const pend = c.pendT.length, hz = ia && ia.hallazgo;
+  const pend = c.pendT.length, hz = c.hz;
   const ids = hz && hz.ids && hz.ids.length ? hz.ids : [];
   const seg = [...c.pendT].sort((a,b)=>(ids.includes(b.id)-ids.includes(a.id))).slice(0,5);
   const topTxt = (l,tot) => l.length ? l.map(x=>esc(x[0])).join(' y ') + ' ('+l[0][1]+(tot?' de '+tot:'')+(l.length>1?' cada una, empate':'')+')' : 'No disponible';
@@ -213,8 +228,8 @@ function pintar(c, ia, cargando){
       <div class="step"><b>Hallazgo</b>${esc(hz.hallazgo)}</div>
       <div class="step"><b>Evidencia</b>${esc(hz.evidencia)}${ids.length?`<div class="ids" aria-label="Tickets que sustentan el hallazgo">${ids.map(i=>`<span class="id">${esc(i)}</span>`).join('')}</div>`:''}</div>
       <div class="step"><b>Acción sugerida</b>${esc(hz.accion)}</div></div>
-      <p class="note">Redactado por la skill «Informe de mesa de ayuda» a partir de los tickets cargados.</p>`
-    : `<p>${cargando?'Generando el hallazgo con la skill…':'El hallazgo no está disponible en este momento.'}</p>`}
+      <p class="note">Calculado a partir de los tickets cargados.</p>`
+    : `<p>No hay tickets pendientes, no hay un problema que priorizar.</p>`}
   </section>
   <section aria-labelledby="h-r"><h2 id="h-r">Resumen de gestión</h2>
     <div class="kpis"><div class="kpi"><div class="n">${c.T}</div><div class="l">Tickets en total</div></div>
