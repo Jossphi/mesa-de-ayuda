@@ -43,6 +43,13 @@
     <p class="sub">Sube el archivo y obtendrás el hallazgo prioritario, el resumen de gestión y los tickets a seguir.</p>
   </header>
 
+  <section aria-labelledby="h-sol">
+    <h2 id="h-sol">Solicitudes de estudiantes <span class="pill" id="solCount" hidden></span></h2>
+    <div id="solBody" class="tablewrap"><p class="note">Cargando solicitudes…</p></div>
+    <p class="note">Se actualiza solo cada 15 segundos. Las solicitudes llegan desde la página de atención a estudiantes.</p>
+  </section>
+
+
   <section aria-labelledby="h-up">
     <h2 id="h-up" class="sr" style="margin-bottom:10px">Cargar el archivo</h2>
     <label class="drop" id="drop">
@@ -253,20 +260,52 @@ function pintar(c, ia, cargando){
 }
 
 
-// ---------- Acceso de demostración del coordinador ----------
-const DEMO_USER = 'coordinador', DEMO_PASS = '12345678';
+// ---------- Acceso del coordinador (validado en el servidor) ----------
+const tokenGet = () => { try { return sessionStorage.getItem('g3_token') || ''; } catch { return ''; } };
+let solTimer = null;
 function setAuth(ok){
   $('login').hidden = ok; $('app').hidden = !ok; $('acciones').hidden = !ok;
-  try { ok ? sessionStorage.setItem('g3_auth','1') : sessionStorage.removeItem('g3_auth'); } catch {}
+  if (!ok) { try { sessionStorage.removeItem('g3_token'); } catch {} clearInterval(solTimer); solTimer = null; }
+  else { cargarSol(); clearInterval(solTimer); solTimer = setInterval(cargarSol, 15000); }
 }
-$('formLogin').addEventListener('submit', e => {
+$('formLogin').addEventListener('submit', async e => {
   e.preventDefault();
-  if ($('usuario').value.trim() === DEMO_USER && $('clave').value === DEMO_PASS) { $('loginError').hidden = true; $('clave').value = ''; setAuth(true); }
-  else $('loginError').hidden = false;
+  const err = $('loginError'); err.hidden = true;
+  try {
+    const r = await fetch('/api/login', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({usuario:$('usuario').value.trim(), clave:$('clave').value})});
+    const j = await r.json();
+    if (!r.ok) { err.textContent = j.error || 'Usuario o clave incorrectos.'; err.hidden = false; return; }
+    try { sessionStorage.setItem('g3_token', j.token); } catch {}
+    $('clave').value = ''; setAuth(true);
+  } catch { err.textContent = 'No se pudo validar el acceso. Intenta de nuevo.'; err.hidden = false; }
 });
-$('rellenar').addEventListener('click', () => { $('usuario').value = DEMO_USER; $('clave').value = DEMO_PASS; $('loginError').hidden = true; $('clave').focus(); });
+$('rellenar').addEventListener('click', () => { $('usuario').value = 'coordinador'; $('clave').value = '12345678'; $('loginError').hidden = true; $('clave').focus(); });
 $('salir').addEventListener('click', () => setAuth(false));
-try { if (sessionStorage.getItem('g3_auth') === '1') setAuth(true); } catch {}
+if (tokenGet()) setAuth(true);
+
+// ---------- Solicitudes de estudiantes ----------
+async function cargarSol(){
+  const box = $('solBody');
+  try {
+    const r = await fetch('/api/tickets', {headers:{authorization:'Bearer ' + tokenGet()}});
+    if (r.status === 401) return setAuth(false);
+    const j = await r.json(); if (!r.ok) throw new Error();
+    pintarSol(j.tickets || []);
+  } catch { if (!box.querySelector('table')) box.innerHTML = '<p class="note">No se pudieron cargar las solicitudes. Se reintentará en unos segundos.</p>'; }
+}
+function pintarSol(lista){
+  const pend = lista.filter(t => t.estado !== 'Resuelto').length;
+  $('solCount').hidden = !lista.length; $('solCount').textContent = pend + ' pendiente(s) de ' + lista.length;
+  if (!lista.length) { $('solBody').innerHTML = '<p>Todavía no hay solicitudes de estudiantes.</p>'; return; }
+  $('solBody').innerHTML = `<table class="sol"><thead><tr><th>ID</th><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Estado</th><th></th></tr></thead><tbody>${lista.map(t => {
+    const p = t.estado !== 'Resuelto';
+    return `<tr class="${p?'key':''}"><td class="t">${esc(t.ticket_id)}</td><td>${esc(new Date(t.creado).toLocaleString('es',{dateStyle:'short',timeStyle:'short'}))}</td><td>${esc(t.categoria)}</td><td class="d">${esc(t.descripcion)}</td><td><span class="${p?'pill':''}">${esc(t.estado)}</span></td><td><button type="button" class="sec btn-s" data-id="${esc(t.ticket_id)}" data-e="${p?'Resuelto':'Pendiente'}">${p?'Marcar resuelto':'Reabrir'}</button></td></tr>`; }).join('')}</tbody></table>`;
+  $('solBody').querySelectorAll('button[data-id]').forEach(b => b.addEventListener('click', async () => {
+    b.disabled = true;
+    try { await fetch('/api/tickets', {method:'PATCH', headers:{'content-type':'application/json', authorization:'Bearer ' + tokenGet()}, body:JSON.stringify({ticket_id:b.dataset.id, estado:b.dataset.e})}); } catch {}
+    cargarSol();
+  }));
+}
 </script>
 </body>
 </html>

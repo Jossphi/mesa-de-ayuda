@@ -25,6 +25,23 @@
     <p class="sub">Consulta el estado de tu solicitud, pregunta por un problema frecuente o revisa cómo contactarnos.</p>
   </header>
 
+  <section aria-labelledby="h-nuevo">
+    <h2 id="h-nuevo">Registrar una solicitud</h2>
+    <form class="form" id="formNuevo">
+      <label for="categoria">¿Con qué servicio tienes el problema?</label>
+      <select id="categoria" required>
+        <option value="">Elige una opción</option>
+        <option>Aula virtual</option><option>Correo institucional</option><option>Matrícula</option><option>Biblioteca digital</option><option>Otro</option>
+      </select>
+      <label for="descripcion">Cuéntanos qué ocurre</label>
+      <textarea id="descripcion" maxlength="300" required placeholder="Por ejemplo: El aula virtual se cierra al iniciar sesión."></textarea>
+      <input class="hp" type="text" id="web" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <p class="note" style="margin:0">No escribas datos personales como tu nombre, correo o contraseña.</p>
+      <button type="submit" id="btnNuevo">Enviar solicitud</button>
+    </form>
+    <div id="resNuevo" class="estres" aria-live="polite"></div>
+  </section>
+
   <section aria-labelledby="h-est">
     <h2 id="h-est">Consultar el estado de mi ticket</h2>
     <form class="field" id="formEstado">
@@ -86,11 +103,33 @@ $('formEstado').addEventListener('submit', e => {
   e.preventDefault();
   const q = norm($('ticketId').value), out = $('estadoTicket');
   if (!q) { out.innerHTML = '<div class="msg">Escribe tu TicketID.</div>'; return; }
+  if (/^e-?\d+$/i.test($('ticketId').value.trim())) { consultarApi($('ticketId').value.trim().toUpperCase().replace(/^E-?/, 'E-')); return; }
   if (!tickets.length || !datos.id) { out.innerHTML = '<div class="msg">En este momento no podemos consultar el estado de tu ticket. Contáctanos por uno de los canales de atención.</div>'; return; }
   const t = tickets.find(x => norm(x.id) === q);
   if (!t) { out.innerHTML = '<div class="msg err">No encontramos ese TicketID. Revisa que esté bien escrito.</div>'; return; }
   const p = pend.has(t.estado);
   out.innerHTML = `<div class="msg"><b>${esc(t.id)}</b> · ${esc(t.categoria || 'Sin categoría')} · <span class="${p?'pill':''}">${esc(t.estado || 'Sin estado')}</span><br>${p ? 'Tu solicitud sigue en atención.' : (t.estado ? 'Tu solicitud ya fue atendida.' : 'Aún no hay un estado registrado para tu solicitud.')}</div>`;
+});
+
+async function consultarApi(id){
+  const out = $('estadoTicket');
+  try {
+    const r = await fetch('/api/tickets?id=' + encodeURIComponent(id)); const j = await r.json();
+    if (!r.ok) { out.innerHTML = '<div class="msg err">' + esc(j.error || 'No encontramos ese TicketID.') + '</div>'; return; }
+    const p = j.estado !== 'Resuelto';
+    out.innerHTML = `<div class="msg"><b>${esc(j.ticket_id)}</b> · ${esc(j.categoria)} · <span class="${p?'pill':''}">${esc(j.estado)}</span><br>${p ? 'Tu solicitud sigue en atención.' : 'Tu solicitud ya fue atendida.'}</div>`;
+  } catch { out.innerHTML = '<div class="msg err">No pudimos consultar el estado. Intenta de nuevo.</div>'; }
+}
+$('formNuevo').addEventListener('submit', async e => {
+  e.preventDefault();
+  const out = $('resNuevo'); $('btnNuevo').disabled = true;
+  try {
+    const r = await fetch('/api/tickets', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({categoria:$('categoria').value, descripcion:$('descripcion').value, web:$('web').value})});
+    const j = await r.json();
+    if (!r.ok) out.innerHTML = '<div class="msg err">' + esc(j.error || 'No se pudo registrar tu solicitud.') + '</div>';
+    else { out.innerHTML = `<div class="msg">Tu solicitud fue registrada. Tu TicketID es <b>${esc(j.ticket_id)}</b>. Guárdalo para consultar el estado más adelante.</div>`; $('formNuevo').reset(); $('ticketId').value = j.ticket_id; }
+  } catch { out.innerHTML = '<div class="msg err">No se pudo registrar tu solicitud. Intenta de nuevo o usa uno de los canales de atención.</div>'; }
+  $('btnNuevo').disabled = false;
 });
 
 function burbuja(clase, texto){ const d = document.createElement('div'); d.className = 'bub ' + clase; d.textContent = texto; $('chat').appendChild(d); d.scrollIntoView({block:'nearest'}); return d; }

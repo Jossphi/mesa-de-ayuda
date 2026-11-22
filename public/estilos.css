@@ -98,3 +98,10 @@ footer{color:var(--muted);font-size:12px;text-align:center}
 .loginbox{width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:24px}
 .loginbox label{font-weight:600;font-size:14px;margin-top:4px}
 .loginbox input{font:inherit;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.form{display:flex;flex-direction:column;gap:10px}
+.form label{font-weight:600;font-size:14px}
+.form select,.form textarea{font:inherit;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+.form textarea{min-height:96px;resize:vertical}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.sol td.d{max-width:340px}
+.btn-s{padding:5px 12px;font-size:13px}
