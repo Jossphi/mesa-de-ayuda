@@ -3,48 +3,70 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Portal Mesa de Ayuda</title>
+<title>Grupito 3 · Portal Mesa de Ayuda</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
+/* Layout: barra superior con logo, zona de carga grande, guía de 3 pasos y resultados por bloques */
 :root{
-  --bg:#f4f6f8; --surface:#ffffff; --ink:#14263a; --muted:#566678; --line:#d9e0e7;
-  --brand:#1d4e6e; --brand-soft:#e3eef5; --warn:#b4540a; --warn-soft:#fbeedd; --bar:#7fa6bf; --err:#a11d2e;
+  --bg:#f3f6f6; --surface:#ffffff; --ink:#10262b; --muted:#587176; --line:#d8e3e4;
+  --brand:#0f6b6b; --brand-2:#0a4d52; --brand-soft:#e1f1f0; --on-brand:#ffffff;
+  --warn:#b4540a; --warn-soft:#fdf0e1; --ok:#2a7a4f; --ok-soft:#e4f3ea; --bar:#5fa8a6; --err:#a11d2e;
   --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:"Inter",system-ui,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root{
-  --bg:#0f1a25; --surface:#16273a; --ink:#e8eef4; --muted:#9db0c2; --line:#2a3f55;
-  --brand:#8fc1e0; --brand-soft:#1c3a52; --warn:#f0a35e; --warn-soft:#3a2a1a; --bar:#4f7c99; --err:#ff8a98; color-scheme:dark}}
+  --bg:#0c1a1d; --surface:#132a2e; --ink:#e6f1f1; --muted:#98b4b7; --line:#25444a;
+  --brand:#4fc1bd; --brand-2:#2c8f8c; --brand-soft:#173d40; --on-brand:#06201f;
+  --warn:#f0a35e; --warn-soft:#3a2a1a; --ok:#6cc79c; --ok-soft:#173a2a; --bar:#3f8f8d; --err:#ff8a98; color-scheme:dark}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
-.wrap{max-width:980px;margin:0 auto;padding:28px 16px 48px;display:flex;flex-direction:column;gap:20px}
-.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-h1{font-family:var(--f-display);font-size:clamp(1.6rem,4vw,2.2rem);line-height:1.15;margin:4px 0;text-wrap:balance}
+.appbar{background:var(--surface);border-bottom:1px solid var(--line)}
+.appbar .in{max-width:1000px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.logo{width:44px;height:44px;flex:none}
+.brandname{font-family:var(--f-display);font-weight:700;font-size:1.35rem;line-height:1.1}
+.brandsub{color:var(--muted);font-size:13px}
+.wrap{max-width:1000px;margin:0 auto;padding:24px 16px 56px;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-size:clamp(1.5rem,4vw,2rem);line-height:1.15;margin:0 0 4px;text-wrap:balance}
 h2{font-family:var(--f-display);font-size:1.15rem;margin:0 0 12px}
+h3{font-family:var(--f-display);font-size:1rem;margin:0 0 10px}
 .sub,.note{color:var(--muted)}
 .note{font-size:13px;margin:10px 0 0}
-section{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:20px;min-width:0}
-.upload{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-button,.btn{font:inherit;font-weight:600;padding:9px 16px;border-radius:6px;border:1px solid var(--brand);background:var(--brand);color:var(--surface);cursor:pointer;text-decoration:none}
+section,.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;min-width:0}
+.drop{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:28px 16px;border:2px dashed var(--brand);border-radius:12px;background:var(--brand-soft);cursor:pointer;transition:background .15s}
+.drop.over{background:var(--surface);border-style:solid}
+.drop svg{width:40px;height:40px;color:var(--brand)}
+.drop b{font-size:1.05rem}
+.drop input{position:absolute;opacity:0;width:1px;height:1px}
+.drop:focus-within{outline:3px solid var(--brand);outline-offset:2px}
+.acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;align-items:center}
+button,.btn{font:inherit;font-weight:600;padding:10px 18px;border-radius:8px;border:1px solid var(--brand);background:var(--brand);color:var(--on-brand);cursor:pointer;text-decoration:none;display:inline-block}
 button.sec,.btn.sec{background:transparent;color:var(--brand)}
-button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-input[type=file]{max-width:100%}
-.msg{padding:10px 14px;border-radius:6px;border:1px solid var(--line);background:var(--brand-soft)}
+button:hover,.btn:hover{filter:brightness(1.08)}
+button:focus-visible,select:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.guide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.guide .card{display:flex;gap:12px;align-items:flex-start}
+.guide .num{flex:none;width:30px;height:30px;border-radius:50%;background:var(--brand);color:var(--on-brand);display:grid;place-items:center;font-weight:700}
+.guide b{display:block}
+.msg{padding:12px 16px;border-radius:10px;border:1px solid var(--line);background:var(--brand-soft)}
 .msg.err{border-color:var(--err);color:var(--err);background:var(--surface)}
-.hallazgo{border-color:var(--warn);background:var(--warn-soft)}
+.hallazgo{border:2px solid var(--warn);background:var(--warn-soft)}
+.hallazgo .tag{display:inline-block;background:var(--warn);color:var(--surface);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 10px;border-radius:99px;margin-bottom:10px}
 .hallazgo h2{color:var(--warn)}
 .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.step{background:var(--surface);border-radius:10px;padding:14px;min-width:0}
 .step b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--warn);margin-bottom:4px}
 .ids{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.id{font-variant-numeric:tabular-nums;font-weight:600;background:var(--surface);border:1px solid var(--warn);color:var(--warn);border-radius:4px;padding:1px 8px}
+.id{font-variant-numeric:tabular-nums;font-weight:600;background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn);border-radius:6px;padding:1px 8px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
-.kpi{border:1px solid var(--line);border-radius:6px;padding:12px}
-.kpi .n{font-family:var(--f-display);font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--bg)}
+.kpi .n{font-family:var(--f-display);font-size:2.1rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
 .kpi .l{color:var(--muted);font-size:13px}
+.kpi.pend{background:var(--warn-soft);border-color:var(--warn)}.kpi.pend .n{color:var(--warn)}
+.kpi.ok{background:var(--ok-soft);border-color:var(--ok)}.kpi.ok .n{color:var(--ok)}
 .cols{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px}
 .row{display:grid;grid-template-columns:150px minmax(0,1fr) 92px;gap:10px;align-items:center;margin-bottom:10px}
-.track{height:14px;background:var(--brand-soft);border-radius:3px;overflow:hidden;display:block}
-.track i{display:block;height:100%;background:var(--bar)}
+.track{height:14px;background:var(--brand-soft);border-radius:99px;overflow:hidden;display:block}
+.track i{display:block;height:100%;background:var(--bar);border-radius:99px}
 .v{font-variant-numeric:tabular-nums;text-align:right;font-size:13px}
 .tablewrap{overflow-x:auto}
 table{border-collapse:collapse;width:100%}
@@ -52,38 +74,65 @@ th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
 th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
 td.t{font-variant-numeric:tabular-nums;font-weight:600}
 .pill{display:inline-block;padding:1px 10px;border-radius:99px;background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn);font-size:13px}
-tr.key td.t{color:var(--warn)}
+tr.key td{background:var(--warn-soft)}tr.key td.t{color:var(--warn)}
 .faq{border-top:1px solid var(--line);padding:12px 0}
 .faq:first-of-type{border-top:0}
 .faq b{display:block}
-.states{display:flex;flex-wrap:wrap;gap:14px;margin-top:8px}
+.states{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:99px;padding:4px 12px;cursor:pointer;background:var(--surface)}
+.chip:has(input:checked){background:var(--warn-soft);border-color:var(--warn);color:var(--warn);font-weight:600}
 ul{margin:0;padding-left:20px}
+footer{color:var(--muted);font-size:12px;text-align:center}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 [hidden]{display:none!important}
-@media (max-width:720px){.steps,.cols{grid-template-columns:1fr}.row{grid-template-columns:110px minmax(0,1fr) 80px}}
+@media (max-width:720px){.steps,.cols,.guide{grid-template-columns:1fr}.row{grid-template-columns:110px minmax(0,1fr) 80px}}
 </style>
 </head>
 <body>
+<div class="appbar"><div class="in">
+  <svg class="logo" viewBox="0 0 48 48" role="img" aria-label="Logo de Grupito 3">
+    <rect width="48" height="48" rx="12" fill="var(--brand)"/>
+    <circle cx="24" cy="14" r="5.5" fill="var(--on-brand)"/><path d="M14.5 30a9.5 9.5 0 0 1 19 0z" fill="var(--on-brand)"/>
+    <circle cx="11" cy="21" r="4" fill="var(--on-brand)" opacity=".75"/><path d="M3.5 35a7.5 7.5 0 0 1 11-6.6V35z" fill="var(--on-brand)" opacity=".75"/>
+    <circle cx="37" cy="21" r="4" fill="var(--on-brand)" opacity=".75"/><path d="M44.5 35a7.5 7.5 0 0 0-11-6.6V35z" fill="var(--on-brand)" opacity=".75"/>
+    <text x="24" y="43.5" text-anchor="middle" font-family="Space Grotesk,sans-serif" font-weight="700" font-size="9" fill="var(--on-brand)">3</text>
+  </svg>
+  <div><div class="brandname">Grupito 3</div><div class="brandsub">Portal de la mesa de ayuda · Panel del coordinador</div></div>
+</div></div>
+
 <div class="wrap">
   <header>
-    <span class="eyebrow">Mesa de ayuda · Panel del coordinador</span>
-    <h1>Portal de gestión de la mesa de ayuda</h1>
-    <p class="sub">Sube el Excel de tickets y el portal genera el informe con la skill «Informe de mesa de ayuda».</p>
+    <h1>Convierte tu Excel de tickets en un informe claro</h1>
+    <p class="sub">Sube el archivo y obtendrás el hallazgo prioritario, el resumen de gestión y los tickets a seguir.</p>
   </header>
 
   <section aria-labelledby="h-up">
-    <h2 id="h-up">1. Cargar el archivo</h2>
-    <div class="upload">
+    <h2 id="h-up" class="sr" style="margin-bottom:10px">Cargar el archivo</h2>
+    <label class="drop" id="drop">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+      <b>Arrastra tu Excel aquí o haz clic para elegirlo</b>
+      <span class="sub">Formatos .xlsx, .xls o .csv</span>
       <input type="file" id="archivo" accept=".xlsx,.xls,.csv" aria-label="Archivo Excel de tickets">
-      <button type="button" class="sec" id="ejemplo">Usar el Excel de ejemplo</button>
+    </label>
+    <div class="acts">
+      <button type="button" id="ejemplo">Probar con el Excel de ejemplo</button>
       <a class="btn sec" href="Mesa_de_ayuda_ejemplo.xlsx" download>Descargar ejemplo</a>
-      <a class="btn sec" href="Mesa_de_ayuda_ejemplo_casos_especiales.xlsx" download>Descargar ejemplo con casos especiales</a>
+      <a class="btn sec" href="Mesa_de_ayuda_ejemplo_casos_especiales.xlsx" download>Ejemplo con casos especiales</a>
     </div>
     <div id="hojaBox" hidden style="margin-top:12px"><label for="hoja">Hoja con los tickets: </label><select id="hoja"></select></div>
     <p class="note">El archivo se lee en tu navegador. Solo se envían a la IA el ID, la categoría, el estado y la descripción de cada ticket.</p>
   </section>
 
   <div id="estado" role="status" hidden></div>
+
+  <div id="guia" class="guide">
+    <div class="card"><span class="num">1</span><div><b>Sube el Excel</b><span class="sub">Con TicketID, Categoría, Estado y Descripción.</span></div></div>
+    <div class="card"><span class="num">2</span><div><b>Revisa el hallazgo</b><span class="sub">El problema con más pendientes y los tickets que lo respaldan.</span></div></div>
+    <div class="card"><span class="num">3</span><div><b>Decide qué hacer</b><span class="sub">Acción sugerida y preguntas frecuentes para estudiantes.</span></div></div>
+  </div>
+
   <div id="resultado" hidden></div>
+  <footer>Grupito 3 · Informe generado con la skill «Informe de mesa de ayuda»</footer>
 </div>
 
 <script>
@@ -108,6 +157,10 @@ $('ejemplo').addEventListener('click', async () => {
   try { const r = await fetch('Mesa_de_ayuda_ejemplo.xlsx'); cargar(await r.arrayBuffer()); }
   catch { msg('No se pudo cargar el ejemplo.','err'); }
 });
+const drop = $('drop');
+['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', async e => { const f = e.dataTransfer.files[0]; if (f) cargar(await f.arrayBuffer()); });
 $('hoja').addEventListener('change', () => procesarHoja($('hoja').value));
 
 function cargar(buf){
@@ -220,11 +273,11 @@ function pintar(c, ia, cargando){
   const seg = [...c.pendT].sort((a,b)=>(ids.includes(b.id)-ids.includes(a.id))).slice(0,5);
   const topTxt = (l,tot) => l.length ? l.map(x=>esc(x[0])).join(' y ') + ' ('+l[0][1]+(tot?' de '+tot:'')+(l.length>1?' cada una, empate':'')+')' : 'No disponible';
   const obs = [...obsDatos, ...(ia && ia.observaciones || [])];
-  const chips = window.estados.length ? `<div class="states" role="group" aria-label="Estados que cuentan como pendientes">${window.estados.map((e,i)=>`<label><input type="checkbox" data-e="${esc(e)}" ${window.pendSel.has(e)?'checked':''}> ${esc(e)}</label>`).join('')}</div>` : '';
-  $('resultado').hidden = false;
+  const chips = window.estados.length ? `<div class="states" role="group" aria-label="Estados que cuentan como pendientes">${window.estados.map((e,i)=>`<label class="chip"><input type="checkbox" data-e="${esc(e)}" ${window.pendSel.has(e)?'checked':''}> ${esc(e)}</label>`).join('')}</div>` : '';
+  $('resultado').hidden = false; $('guia').hidden = true;
   $('resultado').innerHTML = `
   <div style="display:flex;flex-direction:column;gap:20px">
-  <section class="hallazgo" aria-labelledby="h-h"><h2 id="h-h">Hallazgo prioritario</h2>
+  <section class="hallazgo" aria-labelledby="h-h"><span class="tag">Lo más importante</span><h2 id="h-h">Hallazgo prioritario</h2>
     ${hz ? `<div class="steps">
       <div class="step"><b>Hallazgo</b>${esc(hz.hallazgo)}</div>
       <div class="step"><b>Evidencia</b>${esc(hz.evidencia)}${ids.length?`<div class="ids" aria-label="Tickets que sustentan el hallazgo">${ids.map(i=>`<span class="id">${esc(i)}</span>`).join('')}</div>`:''}</div>
@@ -234,8 +287,8 @@ function pintar(c, ia, cargando){
   </section>
   <section aria-labelledby="h-r"><h2 id="h-r">Resumen de gestión</h2>
     <div class="kpis"><div class="kpi"><div class="n">${c.T}</div><div class="l">Tickets en total</div></div>
-      ${c.porEst.map(([k,n])=>`<div class="kpi"><div class="n" ${window.pendSel.has(k)?'style="color:var(--warn)"':''}>${n}</div><div class="l">${esc(k)} · ${pct(n,c.T)}</div></div>`).join('')}</div>
-    <p class="note" style="margin:0 0 4px">Estados contados como pendientes (puedes cambiarlos):</p>${chips}
+      ${c.porEst.map(([k,n])=>`<div class="kpi ${window.pendSel.has(k)?'pend':(/resuelt|cerrad|complet/i.test(k)?'ok':'')}"><div class="n">${n}</div><div class="l">${esc(k)} · ${pct(n,c.T)}</div></div>`).join('')}</div>
+    <p class="note" style="margin:0 0 4px">Toca un estado para contarlo (o no) como pendiente:</p>${chips}
     ${!pend?'<p class="note">No hay tickets pendientes con esta clasificación.</p>':''}
     <div class="cols" style="margin-top:20px"><div><h2>Distribución por categoría</h2>
       ${c.porCat.map(([k,n])=>`<div class="row"><span>${esc(k)}</span><span class="track"><i style="width:${Math.round(n*100/max)}%"></i></span><span class="v">${n} · ${pct(n,c.T)}</span></div>`).join('')}
