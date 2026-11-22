@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Portal Mesa de Ayuda</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --ink:#14263a; --muted:#566678; --line:#d9e0e7;
+  --brand:#1d4e6e; --brand-soft:#e3eef5; --warn:#b4540a; --warn-soft:#fbeedd; --bar:#7fa6bf; --err:#a11d2e;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:"Inter",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0f1a25; --surface:#16273a; --ink:#e8eef4; --muted:#9db0c2; --line:#2a3f55;
+  --brand:#8fc1e0; --brand-soft:#1c3a52; --warn:#f0a35e; --warn-soft:#3a2a1a; --bar:#4f7c99; --err:#ff8a98; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding:28px 16px 48px;display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-size:clamp(1.6rem,4vw,2.2rem);line-height:1.15;margin:4px 0;text-wrap:balance}
+h2{font-family:var(--f-display);font-size:1.15rem;margin:0 0 12px}
+.sub,.note{color:var(--muted)}
+.note{font-size:13px;margin:10px 0 0}
+section{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:20px;min-width:0}
+.upload{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+button,.btn{font:inherit;font-weight:600;padding:9px 16px;border-radius:6px;border:1px solid var(--brand);background:var(--brand);color:var(--surface);cursor:pointer;text-decoration:none}
+button.sec,.btn.sec{background:transparent;color:var(--brand)}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+input[type=file]{max-width:100%}
+.msg{padding:10px 14px;border-radius:6px;border:1px solid var(--line);background:var(--brand-soft)}
+.msg.err{border-color:var(--err);color:var(--err);background:var(--surface)}
+.hallazgo{border-color:var(--warn);background:var(--warn-soft)}
+.hallazgo h2{color:var(--warn)}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.step b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--warn);margin-bottom:4px}
+.ids{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.id{font-variant-numeric:tabular-nums;font-weight:600;background:var(--surface);border:1px solid var(--warn);color:var(--warn);border-radius:4px;padding:1px 8px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.kpi{border:1px solid var(--line);border-radius:6px;padding:12px}
+.kpi .n{font-family:var(--f-display);font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .l{color:var(--muted);font-size:13px}
+.cols{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px}
+.row{display:grid;grid-template-columns:150px minmax(0,1fr) 92px;gap:10px;align-items:center;margin-bottom:10px}
+.track{height:14px;background:var(--brand-soft);border-radius:3px;overflow:hidden;display:block}
+.track i{display:block;height:100%;background:var(--bar)}
+.v{font-variant-numeric:tabular-nums;text-align:right;font-size:13px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.t{font-variant-numeric:tabular-nums;font-weight:600}
+.pill{display:inline-block;padding:1px 10px;border-radius:99px;background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn);font-size:13px}
+tr.key td.t{color:var(--warn)}
+.faq{border-top:1px solid var(--line);padding:12px 0}
+.faq:first-of-type{border-top:0}
+.faq b{display:block}
+.states{display:flex;flex-wrap:wrap;gap:14px;margin-top:8px}
+ul{margin:0;padding-left:20px}
+[hidden]{display:none!important}
+@media (max-width:720px){.steps,.cols{grid-template-columns:1fr}.row{grid-template-columns:110px minmax(0,1fr) 80px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Mesa de ayuda · Panel del coordinador</span>
+    <h1>Portal de gestión de la mesa de ayuda</h1>
+    <p class="sub">Sube el Excel de tickets y el portal genera el informe con la skill «Informe de mesa de ayuda».</p>
+  </header>
+
+  <section aria-labelledby="h-up">
+    <h2 id="h-up">1. Cargar el archivo</h2>
+    <div class="upload">
+      <input type="file" id="archivo" accept=".xlsx,.xls,.csv" aria-label="Archivo Excel de tickets">
+      <button type="button" class="sec" id="ejemplo">Usar el Excel de ejemplo</button>
+      <a class="btn sec" href="Mesa_de_ayuda_ejemplo.xlsx" download>Descargar ejemplo</a>
+    </div>
+    <div id="hojaBox" hidden style="margin-top:12px"><label for="hoja">Hoja con los tickets: </label><select id="hoja"></select></div>
+    <p class="note">El archivo se lee en tu navegador. Solo se envían a la IA el ID, la categoría, el estado y la descripción de cada ticket.</p>
+  </section>
+
+  <div id="estado" role="status" hidden></div>
+  <div id="resultado" hidden></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const pct = (n,t) => (t ? (n*100/t).toFixed(1).replace('.',',') : '0,0') + ' %';
+const ALIAS = {
+  id: ['ticketid','ticket','idticket','id','nticket','numeroticket','codigo'],
+  cat: ['categoria','category','tipo','area','servicio'],
+  estado: ['estado','status','situacion'],
+  desc: ['descripcion','asunto','detalle','subject','descripciondelproblema']
+};
+const PENDIENTE_RX = /pendiente|abierto|en ?proceso|en ?curso|sin ?resolver|nuevo|en ?espera/i;
+
+let workbook = null, tickets = [], obsDatos = [], metaCols = {}, seq = 0;
+
+function msg(texto, tipo){ const e=$('estado'); e.hidden=!texto; e.className='msg'+(tipo==='err'?' err':''); e.textContent=texto||''; }
+
+$('archivo').addEventListener('change', async e => { const f=e.target.files[0]; if(f) cargar(await f.arrayBuffer()); });
+$('ejemplo').addEventListener('click', async () => {
+  try { const r = await fetch('Mesa_de_ayuda_ejemplo.xlsx'); cargar(await r.arrayBuffer()); }
+  catch { msg('No se pudo cargar el ejemplo.','err'); }
+});
+$('hoja').addEventListener('change', () => procesarHoja($('hoja').value));
+
+function cargar(buf){
+  try { workbook = XLSX.read(buf, {type:'array'}); } catch { return msg('No se pudo leer el archivo. Usa un Excel (.xlsx) o CSV.','err'); }
+  const nombres = workbook.SheetNames;
+  const candidatas = nombres.filter(n => encabezado(n).idx !== null);
+  const lista = candidatas.length ? candidatas : nombres;
+  $('hoja').innerHTML = lista.map(n => `<option>${esc(n)}</option>`).join('');
+  $('hojaBox').hidden = lista.length < 2;
+  if (lista.length > 1) msg('Hay varias hojas posibles. Elige la que contiene los tickets (se usó la primera).');
+  procesarHoja(lista[0]);
+}
+
+function encabezado(nombre){
+  const filas = XLSX.utils.sheet_to_json(workbook.Sheets[nombre], {header:1, defval:''});
+  for (let i=0; i<Math.min(filas.length,15); i++){
+    const cols = {};
+    filas[i].forEach((c,j) => { const k=norm(c); for (const [campo,al] of Object.entries(ALIAS)) if (cols[campo]===undefined && al.includes(k)) cols[campo]=j; });
+    if (Object.keys(cols).length >= 2) return {idx:i, cols, filas};
+  }
+  return {idx:null, cols:{}, filas};
+}
+
+function procesarHoja(nombre){
+  const {idx, cols, filas} = encabezado(nombre);
+  if (idx === null) { $('resultado').hidden = true; return msg('No encontré columnas de tickets (TicketID, Categoría, Estado, Descripción) en la hoja «'+nombre+'». Revisa el archivo o elige otra hoja.','err'); }
+  metaCols = cols; obsDatos = []; const vistos = new Map(); let descartadas = 0;
+  for (const f of filas.slice(idx+1)) {
+    const v = campo => cols[campo]===undefined ? '' : String(f[cols[campo]] ?? '').trim();
+    if (f.every(c => String(c).trim()==='')) continue;
+    if (/^total/i.test(String(f[0]).trim()) || /^total/i.test(v('id'))) { descartadas++; continue; }
+    const t = {id:v('id'), categoria:v('cat'), estado:v('estado'), descripcion:v('desc')};
+    if (cols.id !== undefined && t.id) {
+      if (vistos.has(t.id)) {
+        const p = vistos.get(t.id);
+        if (p.categoria !== t.categoria && t.categoria) { p.categoria = ''; p.conf = true; }
+        if (p.estado !== t.estado && t.estado) { p.estado = ''; p.conf = true; }
+        if (p.conf && !obsDatos.some(o=>o.includes(t.id+' '))) obsDatos.push(t.id+' aparece repetido con datos contradictorios; no se le asignó categoría ni estado sin respaldo.');
+        continue;
+      }
+      vistos.set(t.id, t);
+    } else vistos.set('__fila'+vistos.size, t);
+  }
+  tickets = [...vistos.values()];
+  if (descartadas) obsDatos.push(descartadas+' fila(s) de totales excluida(s).');
+  if (cols.id === undefined) obsDatos.push('No hay columna TicketID: el total corresponde a filas de tickets y no se pudo verificar duplicados ni citar identificadores.');
+  if (cols.cat === undefined) obsDatos.push('No hay columna de Categoría: la distribución y los rankings por categoría quedan limitados.');
+  if (cols.estado === undefined) obsDatos.push('No hay columna de Estado: la distribución por estado y los pendientes quedan limitados.');
+  if (cols.desc === undefined) obsDatos.push('No hay columna de Asunto o Descripción: el hallazgo y las preguntas frecuentes quedan limitados.');
+  const sc = tickets.filter(t=>cols.cat!==undefined && !t.categoria).length, se = tickets.filter(t=>cols.estado!==undefined && !t.estado).length;
+  if (sc) obsDatos.push(sc+' ticket(s) sin categoría: se muestran como «Sin categoría» y se excluyen de los rankings.');
+  if (se) obsDatos.push(se+' ticket(s) sin estado: se muestran como «Sin estado» y no cuentan como pendientes.');
+  if (!tickets.length) { $('resultado').hidden = true; return msg('La hoja no tiene filas de tickets.','err'); }
+  // estados distintos y selección inicial de pendientes
+  const estados = [...new Set(tickets.map(t=>t.estado).filter(Boolean))];
+  window.pendSel = new Set(estados.filter(e => PENDIENTE_RX.test(e)));
+  window.estados = estados;
+  analizar();
+}
+
+function calcular(){
+  const T = tickets.length, S = window.pendSel;
+  const cuenta = (campo, vacio) => { const m = new Map(); tickets.forEach(t => { const k = t[campo] || vacio; m.set(k,(m.get(k)||0)+1); }); return [...m].sort((a,b)=>b[1]-a[1]); };
+  const porCat = cuenta('categoria','Sin categoría'), porEst = cuenta('estado','Sin estado');
+  const esPend = t => t.estado && S.has(t.estado);
+  const pendT = tickets.filter(esPend);
+  const pc = new Map(); pendT.filter(t=>t.categoria).forEach(t=>pc.set(t.categoria,(pc.get(t.categoria)||0)+1));
+  const pendCat = [...pc].sort((a,b)=>b[1]-a[1]);
+  const lideres = l => { const r = l.filter(([k])=>k!=='Sin categoría'); return r.length ? r.filter(x=>x[1]===r[0][1]) : []; };
+  return {T, porCat, porEst, pendT, pendCat, topCat: lideres(porCat), topPend: lideres(pendCat)};
+}
+
+let ultimo = 0;
+async function analizar(){
+  const c = calcular(), mi = ++seq; ultimo = mi;
+  pintar(c, null, true);
+  msg('Analizando con la skill…');
+  try {
+    const resumen = {total:c.T, porCategoria:c.porCat, porEstado:c.porEst, estadosPendientes:[...window.pendSel], pendientesPorCategoria:c.pendCat};
+    const r = await fetch('/api/analyze', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({tickets, resumen})});
+    const j = await r.json();
+    if (mi !== ultimo) return;
+    if (!r.ok) throw new Error(j.error || 'Error del servidor');
+    msg(''); pintar(c, j, false);
+  } catch(e){
+    if (mi !== ultimo) return;
+    msg('No se pudo generar el hallazgo con la skill: '+e.message+'. Los indicadores sí se calcularon.','err'); pintar(c, null, false);
+  }
+}
+
+function pintar(c, ia, cargando){
+  const max = c.porCat[0] ? c.porCat[0][1] : 1;
+  const pend = c.pendT.length, hz = ia && ia.hallazgo;
+  const ids = hz && hz.ids && hz.ids.length ? hz.ids : [];
+  const seg = [...c.pendT].sort((a,b)=>(ids.includes(b.id)-ids.includes(a.id))).slice(0,5);
+  const topTxt = (l,tot) => l.length ? l.map(x=>esc(x[0])).join(' y ') + ' ('+l[0][1]+(tot?' de '+tot:'')+(l.length>1?' cada una, empate':'')+')' : 'No disponible';
+  const obs = [...obsDatos, ...(ia && ia.observaciones || [])];
+  const chips = window.estados.length ? `<div class="states" role="group" aria-label="Estados que cuentan como pendientes">${window.estados.map((e,i)=>`<label><input type="checkbox" data-e="${esc(e)}" ${window.pendSel.has(e)?'checked':''}> ${esc(e)}</label>`).join('')}</div>` : '';
+  $('resultado').hidden = false;
+  $('resultado').innerHTML = `
+  <div style="display:flex;flex-direction:column;gap:20px">
+  <section class="hallazgo" aria-labelledby="h-h"><h2 id="h-h">Hallazgo prioritario</h2>
+    ${hz ? `<div class="steps">
+      <div class="step"><b>Hallazgo</b>${esc(hz.hallazgo)}</div>
+      <div class="step"><b>Evidencia</b>${esc(hz.evidencia)}${ids.length?`<div class="ids" aria-label="Tickets que sustentan el hallazgo">${ids.map(i=>`<span class="id">${esc(i)}</span>`).join('')}</div>`:''}</div>
+      <div class="step"><b>Acción sugerida</b>${esc(hz.accion)}</div></div>
+      <p class="note">Redactado por la skill «Informe de mesa de ayuda» a partir de los tickets cargados.</p>`
+    : `<p>${cargando?'Generando el hallazgo con la skill…':'El hallazgo no está disponible en este momento.'}</p>`}
+  </section>
+  <section aria-labelledby="h-r"><h2 id="h-r">Resumen de gestión</h2>
+    <div class="kpis"><div class="kpi"><div class="n">${c.T}</div><div class="l">Tickets en total</div></div>
+      ${c.porEst.map(([k,n])=>`<div class="kpi"><div class="n" ${window.pendSel.has(k)?'style="color:var(--warn)"':''}>${n}</div><div class="l">${esc(k)} · ${pct(n,c.T)}</div></div>`).join('')}</div>
+    <p class="note" style="margin:0 0 4px">Estados contados como pendientes (puedes cambiarlos):</p>${chips}
+    ${!pend?'<p class="note">No hay tickets pendientes con esta clasificación.</p>':''}
+    <div class="cols" style="margin-top:20px"><div><h2>Distribución por categoría</h2>
+      ${c.porCat.map(([k,n])=>`<div class="row"><span>${esc(k)}</span><span class="track"><i style="width:${Math.round(n*100/max)}%"></i></span><span class="v">${n} · ${pct(n,c.T)}</span></div>`).join('')}
+      <p class="note">Más tickets: <b>${topTxt(c.topCat)}</b>.<br>Más pendientes: <b>${c.topPend.length?topTxt(c.topPend):'ninguna categoría con pendientes'}</b>.</p></div>
+      <div class="tablewrap"><h2>Pendientes por categoría</h2><table><thead><tr><th>Categoría</th><th>Pendientes</th></tr></thead><tbody>
+      ${c.porCat.filter(([k])=>k!=='Sin categoría').map(([k,n])=>`<tr><td>${esc(k)}</td><td>${(c.pendCat.find(x=>x[0]===k)||[0,0])[1]} de ${n}</td></tr>`).join('')}</tbody></table></div></div>
+  </section>
+  <section aria-labelledby="h-s"><h2 id="h-s">Seguimiento de tickets pendientes</h2>
+    ${seg.length?`<div class="tablewrap"><table><thead><tr><th>ID</th><th>Categoría</th><th>Estado</th></tr></thead><tbody>
+    ${seg.map(t=>`<tr class="${ids.includes(t.id)?'key':''}"><td class="t">${esc(t.id||'—')}</td><td>${esc(t.categoria||'Sin categoría')}</td><td><span class="pill">${esc(t.estado)}</span></td></tr>`).join('')}</tbody></table></div>
+    <p class="note">Se muestran ${seg.length} de ${pend} pendientes. Los marcados en naranja sustentan el hallazgo.</p>`:'<p>No hay tickets pendientes.</p>'}
+  </section>
+  ${ia && ia.faqs && ia.faqs.length ? `<section aria-labelledby="h-f"><h2 id="h-f">Preguntas frecuentes para estudiantes</h2>${ia.faqs.slice(0,3).map(f=>`<div class="faq"><b>${esc(f.pregunta)}</b>${esc(f.respuesta)}</div>`).join('')}</section>`:''}
+  ${obs.length?`<section aria-labelledby="h-o"><h2 id="h-o">Observaciones sobre los datos</h2><ul>${obs.map(o=>`<li>${esc(o)}</li>`).join('')}</ul></section>`:''}
+  </div>`;
+  document.querySelectorAll('[data-e]').forEach(cb => cb.addEventListener('change', () => {
+    cb.checked ? window.pendSel.add(cb.dataset.e) : window.pendSel.delete(cb.dataset.e); analizar();
+  }));
+}
+</script>
+</body>
+</html>
