@@ -46,7 +46,7 @@
   <section aria-labelledby="h-sol">
     <h2 id="h-sol">Solicitudes de estudiantes <span class="pill" id="solCount" hidden></span></h2>
     <div id="solBody" class="tablewrap"><p class="note">Cargando solicitudes…</p></div>
-    <p class="note">Se actualiza solo cada 15 segundos. Las solicitudes llegan desde la página de atención a estudiantes.</p>
+    <p class="note">Se actualiza solo cada 15 segundos. Escribe una respuesta y el estudiante la verá al consultar su ticket.</p>
   </section>
 
 
@@ -293,16 +293,37 @@ async function cargarSol(){
     pintarSol(j.tickets || []);
   } catch { if (!box.querySelector('table')) box.innerHTML = '<p class="note">No se pudieron cargar las solicitudes. Se reintentará en unos segundos.</p>'; }
 }
+const fechaCorta = d => new Date(d).toLocaleString('es',{dateStyle:'short',timeStyle:'short'});
+async function actualizarTicket(id, datos){
+  const r = await fetch('/api/tickets', {method:'PATCH', headers:{'content-type':'application/json', authorization:'Bearer ' + tokenGet()}, body:JSON.stringify(Object.assign({ticket_id:id}, datos))});
+  return r.ok;
+}
 function pintarSol(lista){
+  const box = $('solBody');
+  // no pisar lo que el coordinador está escribiendo
+  if (document.activeElement && document.activeElement.tagName === 'TEXTAREA' && box.contains(document.activeElement)) return;
   const pend = lista.filter(t => t.estado !== 'Resuelto').length;
   $('solCount').hidden = !lista.length; $('solCount').textContent = pend + ' pendiente(s) de ' + lista.length;
-  if (!lista.length) { $('solBody').innerHTML = '<p>Todavía no hay solicitudes de estudiantes.</p>'; return; }
-  $('solBody').innerHTML = `<table class="sol"><thead><tr><th>ID</th><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Estado</th><th></th></tr></thead><tbody>${lista.map(t => {
+  if (!lista.length) { box.innerHTML = '<p>Todavía no hay solicitudes de estudiantes.</p>'; return; }
+  const borradores = {}; box.querySelectorAll('textarea[data-id]').forEach(t => { if (t.value) borradores[t.dataset.id] = t.value; });
+  box.innerHTML = lista.map(t => {
     const p = t.estado !== 'Resuelto';
-    return `<tr class="${p?'key':''}"><td class="t">${esc(t.ticket_id)}</td><td>${esc(new Date(t.creado).toLocaleString('es',{dateStyle:'short',timeStyle:'short'}))}</td><td>${esc(t.categoria)}</td><td class="d">${esc(t.descripcion)}</td><td><span class="${p?'pill':''}">${esc(t.estado)}</span></td><td><button type="button" class="sec btn-s" data-id="${esc(t.ticket_id)}" data-e="${p?'Resuelto':'Pendiente'}">${p?'Marcar resuelto':'Reabrir'}</button></td></tr>`; }).join('')}</tbody></table>`;
-  $('solBody').querySelectorAll('button[data-id]').forEach(b => b.addEventListener('click', async () => {
-    b.disabled = true;
-    try { await fetch('/api/tickets', {method:'PATCH', headers:{'content-type':'application/json', authorization:'Bearer ' + tokenGet()}, body:JSON.stringify({ticket_id:b.dataset.id, estado:b.dataset.e})}); } catch {}
+    return `<div class="sol-item ${p?'pend':''}">
+      <div class="sol-head"><span class="t">${esc(t.ticket_id)}</span><span class="${p?'pill':''}">${esc(t.estado)}</span><span><b>${esc(t.nombre || 'Sin nombre')}</b> · ${esc(t.categoria)}</span><span class="sol-meta">${esc(fechaCorta(t.creado))}</span></div>
+      <div class="sol-desc">${esc(t.descripcion)}</div>
+      ${t.comentario ? `<div class="sol-resp"><b>Tu respuesta</b> (${esc(fechaCorta(t.respondido))})<br>${esc(t.comentario)}</div>` : ''}
+      <textarea data-id="${esc(t.ticket_id)}" maxlength="500" placeholder="${t.comentario ? 'Escribe una nueva respuesta para el estudiante' : 'Escribe una respuesta para el estudiante'}" aria-label="Respuesta para ${esc(t.ticket_id)}"></textarea>
+      <div class="sol-acts"><button type="button" class="btn-s" data-act="resp" data-id="${esc(t.ticket_id)}">Enviar respuesta</button>
+        <button type="button" class="sec btn-s" data-act="estado" data-id="${esc(t.ticket_id)}" data-e="${p?'Resuelto':'Pendiente'}">${p?'Marcar resuelto':'Reabrir'}</button></div>
+    </div>`; }).join('');
+  box.querySelectorAll('textarea[data-id]').forEach(t => { if (borradores[t.dataset.id]) t.value = borradores[t.dataset.id]; });
+  box.querySelectorAll('button[data-act]').forEach(b => b.addEventListener('click', async () => {
+    const id = b.dataset.id; b.disabled = true;
+    if (b.dataset.act === 'resp') {
+      const ta = box.querySelector(`textarea[data-id="${id}"]`); const txt = ta.value.trim();
+      if (!txt) { ta.focus(); b.disabled = false; return; }
+      if (await actualizarTicket(id, {comentario: txt})) ta.value = ''; else { b.disabled = false; return; }
+    } else await actualizarTicket(id, {estado: b.dataset.e});
     cargarSol();
   }));
 }

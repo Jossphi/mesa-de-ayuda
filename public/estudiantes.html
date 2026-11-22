@@ -28,6 +28,8 @@
   <section aria-labelledby="h-nuevo">
     <h2 id="h-nuevo">Registrar una solicitud</h2>
     <form class="form" id="formNuevo">
+      <label for="nombre">Tu nombre</label>
+      <input type="text" id="nombre" maxlength="60" required autocomplete="name" placeholder="Nombre y apellido">
       <label for="categoria">¿Con qué servicio tienes el problema?</label>
       <select id="categoria" required>
         <option value="">Elige una opción</option>
@@ -36,16 +38,17 @@
       <label for="descripcion">Cuéntanos qué ocurre</label>
       <textarea id="descripcion" maxlength="300" required placeholder="Por ejemplo: El aula virtual se cierra al iniciar sesión."></textarea>
       <input class="hp" type="text" id="web" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <p class="note" style="margin:0">No escribas datos personales como tu nombre, correo o contraseña.</p>
+      <p class="note" style="margin:0">Tu nombre lo verá la mesa de ayuda para atenderte. No escribas contraseñas ni otros datos personales en la descripción.</p>
       <button type="submit" id="btnNuevo">Enviar solicitud</button>
     </form>
     <div id="resNuevo" class="estres" aria-live="polite"></div>
   </section>
 
   <section aria-labelledby="h-est">
-    <h2 id="h-est">Consultar el estado de mi ticket</h2>
+    <h2 id="h-est">Consultar el estado y la respuesta de mi ticket</h2>
     <form class="field" id="formEstado">
-      <input type="text" id="ticketId" placeholder="Escribe tu TicketID, por ejemplo T-005" aria-label="TicketID" autocomplete="off">
+      <input type="text" id="ticketId" placeholder="TicketID, por ejemplo E-001" aria-label="TicketID" autocomplete="off">
+      <input type="text" id="codigo" placeholder="Código del ticket" aria-label="Código del ticket" autocomplete="off" style="max-width:180px">
       <button type="submit">Consultar</button>
     </form>
     <div id="estadoTicket" class="estres" aria-live="polite"></div>
@@ -103,7 +106,7 @@ $('formEstado').addEventListener('submit', e => {
   e.preventDefault();
   const q = norm($('ticketId').value), out = $('estadoTicket');
   if (!q) { out.innerHTML = '<div class="msg">Escribe tu TicketID.</div>'; return; }
-  if (/^e-?\d+$/i.test($('ticketId').value.trim())) { consultarApi($('ticketId').value.trim().toUpperCase().replace(/^E-?/, 'E-')); return; }
+  if (/^e-?\d+$/i.test($('ticketId').value.trim())) { consultarApi($('ticketId').value.trim().toUpperCase().replace(/^E-?/, 'E-'), $('codigo').value.trim()); return; }
   if (!tickets.length || !datos.id) { out.innerHTML = '<div class="msg">En este momento no podemos consultar el estado de tu ticket. Contáctanos por uno de los canales de atención.</div>'; return; }
   const t = tickets.find(x => norm(x.id) === q);
   if (!t) { out.innerHTML = '<div class="msg err">No encontramos ese TicketID. Revisa que esté bien escrito.</div>'; return; }
@@ -111,23 +114,25 @@ $('formEstado').addEventListener('submit', e => {
   out.innerHTML = `<div class="msg"><b>${esc(t.id)}</b> · ${esc(t.categoria || 'Sin categoría')} · <span class="${p?'pill':''}">${esc(t.estado || 'Sin estado')}</span><br>${p ? 'Tu solicitud sigue en atención.' : (t.estado ? 'Tu solicitud ya fue atendida.' : 'Aún no hay un estado registrado para tu solicitud.')}</div>`;
 });
 
-async function consultarApi(id){
+async function consultarApi(id, codigo){
   const out = $('estadoTicket');
+  if (!codigo) { out.innerHTML = '<div class="msg">Escribe también el código que recibiste al registrar tu solicitud.</div>'; return; }
   try {
-    const r = await fetch('/api/tickets?id=' + encodeURIComponent(id)); const j = await r.json();
-    if (!r.ok) { out.innerHTML = '<div class="msg err">' + esc(j.error || 'No encontramos ese TicketID.') + '</div>'; return; }
+    const r = await fetch('/api/tickets?id=' + encodeURIComponent(id) + '&codigo=' + encodeURIComponent(codigo)); const j = await r.json();
+    if (!r.ok) { out.innerHTML = '<div class="msg err">' + esc(j.error || 'No encontramos ese ticket.') + '</div>'; return; }
     const p = j.estado !== 'Resuelto';
-    out.innerHTML = `<div class="msg"><b>${esc(j.ticket_id)}</b> · ${esc(j.categoria)} · <span class="${p?'pill':''}">${esc(j.estado)}</span><br>${p ? 'Tu solicitud sigue en atención.' : 'Tu solicitud ya fue atendida.'}</div>`;
+    const resp = j.comentario ? `<div class="respuesta"><b>Respuesta de la mesa de ayuda</b> (${esc(new Date(j.respondido).toLocaleString('es',{dateStyle:'short',timeStyle:'short'}))})<br>${esc(j.comentario)}</div>` : '<div class="note">Aún no hay respuesta de la mesa de ayuda.</div>';
+    out.innerHTML = `<div class="msg"><b>${esc(j.ticket_id)}</b> · ${esc(j.categoria)} · <span class="${p?'pill':''}">${esc(j.estado)}</span>${resp}</div>`;
   } catch { out.innerHTML = '<div class="msg err">No pudimos consultar el estado. Intenta de nuevo.</div>'; }
 }
 $('formNuevo').addEventListener('submit', async e => {
   e.preventDefault();
   const out = $('resNuevo'); $('btnNuevo').disabled = true;
   try {
-    const r = await fetch('/api/tickets', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({categoria:$('categoria').value, descripcion:$('descripcion').value, web:$('web').value})});
+    const r = await fetch('/api/tickets', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({nombre:$('nombre').value, categoria:$('categoria').value, descripcion:$('descripcion').value, web:$('web').value})});
     const j = await r.json();
     if (!r.ok) out.innerHTML = '<div class="msg err">' + esc(j.error || 'No se pudo registrar tu solicitud.') + '</div>';
-    else { out.innerHTML = `<div class="msg">Tu solicitud fue registrada. Tu TicketID es <b>${esc(j.ticket_id)}</b>. Guárdalo para consultar el estado más adelante.</div>`; $('formNuevo').reset(); $('ticketId').value = j.ticket_id; }
+    else { out.innerHTML = `<div class="msg">Tu solicitud fue registrada. Tu TicketID es <b>${esc(j.ticket_id)}</b> y tu código es <b>${esc(j.codigo)}</b>. Guarda los dos: los necesitas para ver la respuesta de la mesa de ayuda.</div>`; $('formNuevo').reset(); $('ticketId').value = j.ticket_id; $('codigo').value = j.codigo; }
   } catch { out.innerHTML = '<div class="msg err">No se pudo registrar tu solicitud. Intenta de nuevo o usa uno de los canales de atención.</div>'; }
   $('btnNuevo').disabled = false;
 });

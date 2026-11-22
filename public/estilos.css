@@ -105,3 +105,14 @@ footer{color:var(--muted);font-size:12px;text-align:center}
 .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 .sol td.d{max-width:340px}
 .btn-s{padding:5px 12px;font-size:13px}
+.sol-item{border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;margin-bottom:12px;background:var(--surface)}
+.sol-item.pend{border-color:var(--warn);background:var(--warn-soft)}
+.sol-head{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}
+.sol-head .t{font-weight:700;font-variant-numeric:tabular-nums}
+.sol-meta{color:var(--muted);font-size:13px}
+.sol-desc{white-space:pre-wrap}
+.sol-resp{background:var(--brand-soft);border-radius:8px;padding:8px 12px;font-size:14px;white-space:pre-wrap}
+.sol-item textarea{font:inherit;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%;min-height:64px;resize:vertical}
+.sol-acts{display:flex;flex-wrap:wrap;gap:8px}
+.form input[type=text]{font:inherit;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+.respuesta{margin-top:8px;background:var(--brand-soft);border-radius:8px;padding:8px 12px;white-space:pre-wrap}
