@@ -39,7 +39,7 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional ni bloques 
 
   try {
     let texto;
-    if (geminiKey) {
+    if (!claudeKey && geminiKey) {
       const modelo = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
       const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + modelo + ':generateContent', {
         method: 'POST',
