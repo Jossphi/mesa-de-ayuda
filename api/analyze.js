@@ -3,7 +3,7 @@ const { leerSkill, hayClave, llamarIA } = require('./_ia');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido' });
-  if (!hayClave()) return res.status(500).json({ error: 'Falta configurar ANTHROPIC_API_KEY (o GEMINI_API_KEY) en Vercel.' });
+  if (!hayClave()) return res.status(500).json({ error: 'Falta configurar GEMINI_API_KEY en Vercel.' });
   const { tickets, resumen } = req.body || {};
   if (!Array.isArray(tickets) || tickets.length === 0) return res.status(400).json({ error: 'No hay tickets para analizar.' });
 
