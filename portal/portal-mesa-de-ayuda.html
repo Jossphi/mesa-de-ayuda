@@ -1,0 +1,125 @@
+<title>Portal Mesa de Ayuda</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: cabecera institucional, hallazgo prioritario en primer plano, resumen de gestión y seguimiento debajo */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --ink:#14263a; --muted:#566678; --line:#d9e0e7;
+  --brand:#1d4e6e; --brand-soft:#e3eef5; --warn:#b4540a; --warn-soft:#fbeedd; --ok:#2f7d5b;
+  --bar:#7fa6bf; --bar-pend:#b4540a;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:"Inter",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1a25; --surface:#16273a; --ink:#e8eef4; --muted:#9db0c2; --line:#2a3f55;
+  --brand:#8fc1e0; --brand-soft:#1c3a52; --warn:#f0a35e; --warn-soft:#3a2a1a; --ok:#6cc79c;
+  --bar:#4f7c99; --bar-pend:#f0a35e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1a25; --surface:#16273a; --ink:#e8eef4; --muted:#9db0c2; --line:#2a3f55;
+  --brand:#8fc1e0; --brand-soft:#1c3a52; --warn:#f0a35e; --warn-soft:#3a2a1a; --ok:#6cc79c;
+  --bar:#4f7c99; --bar-pend:#f0a35e; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-direction:column;gap:4px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-size:clamp(1.6rem,4vw,2.2rem);line-height:1.15;margin:0;text-wrap:balance}
+h2{font-family:var(--f-display);font-size:1.15rem;margin:0 0 12px}
+.sub{color:var(--muted);margin:0}
+section{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:20px}
+.hallazgo{border-color:var(--warn);background:var(--warn-soft)}
+.hallazgo h2{color:var(--warn)}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.step{min-width:0}
+.step b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--warn);margin-bottom:4px}
+.ids{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.id{font-variant-numeric:tabular-nums;font-weight:600;background:var(--surface);border:1px solid var(--warn);color:var(--warn);border-radius:4px;padding:1px 8px}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.kpi{border:1px solid var(--line);border-radius:6px;padding:12px;min-width:0}
+.kpi .n{font-family:var(--f-display);font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .l{color:var(--muted);font-size:13px}
+.cols{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px}
+.row{display:grid;grid-template-columns:150px minmax(0,1fr) 92px;gap:10px;align-items:center;margin-bottom:10px}
+.track{height:14px;background:var(--brand-soft);border-radius:3px;overflow:hidden;display:flex}
+.track i{display:block;height:100%}
+.v{font-variant-numeric:tabular-nums;text-align:right;font-size:13px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin-top:4px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.t{font-variant-numeric:tabular-nums;font-weight:600}
+.pill{display:inline-block;padding:1px 10px;border-radius:99px;background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn);font-size:13px}
+tr.key td.t{color:var(--warn)}
+.note{color:var(--muted);font-size:13px;margin:10px 0 0}
+footer{color:var(--muted);font-size:12px}
+a:focus-visible,button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+@media (max-width:720px){.steps,.cols,.kpis{grid-template-columns:1fr}.row{grid-template-columns:120px minmax(0,1fr) 80px}}
+</style>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Mesa de ayuda · Panel del coordinador</span>
+    <h1>Portal de gestión de la mesa de ayuda</h1>
+    <p class="sub">Tickets registrados del 09 al 13 de noviembre de 2026 (T-001 a T-040).</p>
+  </header>
+
+  <section class="hallazgo" aria-labelledby="h-hallazgo">
+    <h2 id="h-hallazgo">Hallazgo prioritario</h2>
+    <div class="steps">
+      <div class="step"><b>Hallazgo</b>El «acceso denegado» al libro digital no se ha resuelto en ningún caso, a pesar de repetirse durante tres días.</div>
+      <div class="step"><b>Evidencia</b>3 tickets con la misma descripción siguen pendientes, sin horas de resolución. Son la mitad de los 6 de Biblioteca digital y 3 de los 8 pendientes totales.
+        <div class="ids" aria-label="Tickets que sustentan el hallazgo"><span class="id">T-005</span><span class="id">T-010</span><span class="id">T-025</span></div></div>
+      <div class="step"><b>Acción sugerida</b>Asignar un responsable que revise los permisos de acceso a los libros digitales, cierre estos 3 casos y avise a los estudiantes afectados.</div>
+    </div>
+    <p class="note">Resultado generado con la skill «Informe de mesa de ayuda» y validado contra el Excel de origen.</p>
+  </section>
+
+  <section aria-labelledby="h-resumen">
+    <h2 id="h-resumen">Resumen de gestión</h2>
+    <div class="kpis">
+      <div class="kpi"><div class="n">40</div><div class="l">Tickets en total</div></div>
+      <div class="kpi"><div class="n">32</div><div class="l">Resueltos · 80,0 %</div></div>
+      <div class="kpi"><div class="n" style="color:var(--warn)">8</div><div class="l">Pendientes · 20,0 %</div></div>
+    </div>
+    <div class="cols">
+      <div>
+        <h2>Categorías con más solicitudes</h2>
+        <div class="row"><span>Aula virtual</span><span class="track"><i style="width:100%;background:var(--bar)"></i></span><span class="v">20 · 50,0 %</span></div>
+        <div class="row"><span>Correo institucional</span><span class="track"><i style="width:35%;background:var(--bar)"></i></span><span class="v">7 · 17,5 %</span></div>
+        <div class="row"><span>Matrícula</span><span class="track"><i style="width:35%;background:var(--bar)"></i></span><span class="v">7 · 17,5 %</span></div>
+        <div class="row"><span>Biblioteca digital</span><span class="track"><i style="width:30%;background:var(--bar)"></i></span><span class="v">6 · 15,0 %</span></div>
+        <p class="note">Aula virtual concentra la mitad de las solicitudes y también más pendientes (4).</p>
+      </div>
+      <div class="tablewrap">
+        <h2>Pendientes por categoría</h2>
+        <table>
+          <thead><tr><th>Categoría</th><th>Pendientes</th></tr></thead>
+          <tbody>
+            <tr><td>Aula virtual</td><td>4 de 20</td></tr>
+            <tr><td>Biblioteca digital</td><td>3 de 6</td></tr>
+            <tr><td>Matrícula</td><td>1 de 7</td></tr>
+            <tr><td>Correo institucional</td><td>0 de 7</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-seg">
+    <h2 id="h-seg">Seguimiento de tickets pendientes</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>ID</th><th>Categoría</th><th>Estado</th></tr></thead>
+        <tbody>
+          <tr class="key"><td class="t">T-005</td><td>Biblioteca digital</td><td><span class="pill">Pendiente</span></td></tr>
+          <tr class="key"><td class="t">T-010</td><td>Biblioteca digital</td><td><span class="pill">Pendiente</span></td></tr>
+          <tr class="key"><td class="t">T-025</td><td>Biblioteca digital</td><td><span class="pill">Pendiente</span></td></tr>
+          <tr><td class="t">T-015</td><td>Aula virtual</td><td><span class="pill">Pendiente</span></td></tr>
+          <tr><td class="t">T-020</td><td>Aula virtual</td><td><span class="pill">Pendiente</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Se muestran 5 de los 8 pendientes. Los tres primeros, en naranja, sustentan el hallazgo prioritario. Faltan por listar T-030, T-035 y T-040.</p>
+  </section>
+
+  <footer>Fuente: hoja «Mesa de ayuda» (carpeta Maestria, Google Drive). Estado contado como pendiente: «Pendiente».</footer>
+</div>
